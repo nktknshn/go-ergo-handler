@@ -24,7 +24,7 @@ func (p testPayload) Validate() error {
 
 func TestPayloadWithValidation(t *testing.T) {
 
-	payload := goergohandler.NewPayloadWithValidation(testPayload{})
+	payload := goergohandler.NewPayloadWithValidation[testPayload]()
 	builder := goergohandler.New()
 	attachedPayload := payload.Attach(builder)
 

@@ -62,10 +62,6 @@ func (p *AttachedPayloadWithValidation[T]) Get(ctx context.Context) T {
 	return v.(T)
 }
 
-func NewPayloadWithValidation[T PayloadWithValidationErrorType](
-	payload T,
-) *PayloadWithValidation[T] {
-	return &PayloadWithValidation[T]{
-		Payload: payload,
-	}
+func NewPayloadWithValidation[T PayloadWithValidationErrorType]() *PayloadWithValidation[T] {
+	return &PayloadWithValidation[T]{}
 }
