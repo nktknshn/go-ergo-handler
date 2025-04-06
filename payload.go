@@ -24,7 +24,7 @@ type PayloadWithValidationErrorType interface {
 }
 
 func (p *PayloadWithValidation[T]) Attach(builder HandlerBuilder) *AttachedPayloadWithValidation[T] {
-	a := &AttachedPayloadWithValidation[T]{}
+	a := &AttachedPayloadWithValidation[T]{p}
 	builder.AddParser(a)
 	return a
 }
