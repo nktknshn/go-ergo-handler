@@ -3,12 +3,16 @@ package goergohandler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 )
 
 type payloadKeyType string
 
-var payloadKey payloadKeyType = "payload"
+var (
+	payloadKey            payloadKeyType = "payload"
+	ErrPayloadParserError error          = errors.New("payload parser error")
+)
 
 type PayloadWithValidation[T PayloadWithValidationErrorType] struct {
 	Payload   T
@@ -33,7 +37,11 @@ func (p *AttachedPayloadWithValidation[T]) ParseRequest(ctx context.Context, w h
 	var pl T
 	err := json.NewDecoder(r.Body).Decode(&pl)
 	if err != nil {
-		return ctx, WrapError(p.p.ParserErr, defaultHttpStatusCodeErrParsing)
+		parseErr := ErrPayloadParserError
+		if p.p.ParserErr != nil {
+			parseErr = p.p.ParserErr
+		}
+		return ctx, WrapError(parseErr, defaultHttpStatusCodeErrParsing)
 	}
 	valErr := pl.Validate()
 	if valErr != nil {
