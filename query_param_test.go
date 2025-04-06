@@ -13,7 +13,7 @@ import (
 )
 
 func TestQueryParam_ParseRequest(t *testing.T) {
-	queryParam := goergohandler.NewQueryParam("some_key", func(ctx context.Context, v string) (string, error) {
+	queryParam := goergohandler.QueryParam("some_key", func(ctx context.Context, v string) (string, error) {
 		return v, nil
 	}, errors.New("some_key is required"))
 
@@ -49,7 +49,7 @@ func (p paramBookIDType) Validate() error {
 }
 
 func TestQueryParam_ParseRequest_WithValidation(t *testing.T) {
-	queryParam := goergohandler.NewQueryParam("some_key", func(ctx context.Context, v string) (paramBookIDType, error) {
+	queryParam := goergohandler.QueryParam("some_key", func(ctx context.Context, v string) (paramBookIDType, error) {
 		vint, _ := strconv.Atoi(v)
 		return paramBookIDType(vint), nil
 	}, errors.New("some_key is required"))

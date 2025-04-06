@@ -14,7 +14,7 @@ import (
 type queryParamValue string
 
 func TestQueryParamMaybe_ParseRequest(t *testing.T) {
-	queryParam := goergohandler.NewQueryParamMaybe("some_key", func(ctx context.Context, v string) (queryParamValue, error) {
+	queryParam := goergohandler.QueryParamMaybe("some_key", func(ctx context.Context, v string) (queryParamValue, error) {
 		if v == "" {
 			return "", errors.New("query param is empty")
 		}

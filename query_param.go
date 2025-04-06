@@ -11,20 +11,20 @@ type queryParamKeyType string
 
 type QueryParamParserFunc[T any] func(ctx context.Context, v string) (T, error)
 
-type QueryParam[T any] struct {
+type QueryParamType[T any] struct {
 	Name       string
 	Parser     QueryParamParserFunc[T]
 	ErrMissing error
 }
 
-func (qp *QueryParam[T]) Attach(b ParserAdder) *AttachedQueryParam[T] {
+func (qp *QueryParamType[T]) Attach(b ParserAdder) *AttachedQueryParam[T] {
 	a := &AttachedQueryParam[T]{qp}
 	b.AddParser(a)
 	return a
 }
 
 type AttachedQueryParam[T any] struct {
-	qp *QueryParam[T]
+	qp *QueryParamType[T]
 }
 
 func (p *AttachedQueryParam[T]) ParseRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (context.Context, error) {
@@ -59,12 +59,12 @@ func (p *AttachedQueryParam[T]) Get(ctx context.Context) T {
 	return v.(T)
 }
 
-func NewQueryParam[T any](
+func QueryParam[T any](
 	name string,
 	parser QueryParamParserFunc[T],
 	errMissing error,
-) *QueryParam[T] {
-	return &QueryParam[T]{
+) *QueryParamType[T] {
+	return &QueryParamType[T]{
 		name, parser, errMissing,
 	}
 }

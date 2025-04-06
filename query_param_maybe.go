@@ -7,19 +7,19 @@ import (
 
 type QueryParamMaybeParser[T any] func(ctx context.Context, v string) (T, error)
 
-type QueryParamMaybe[T any] struct {
+type QueryParamMaybeType[T any] struct {
 	Name   string
 	Parser QueryParamMaybeParser[T]
 }
 
-func (qp *QueryParamMaybe[T]) Attach(b ParserAdder) *AttachedQueryParamMaybe[T] {
+func (qp *QueryParamMaybeType[T]) Attach(b ParserAdder) *AttachedQueryParamMaybe[T] {
 	a := &AttachedQueryParamMaybe[T]{qp}
 	b.AddParser(a)
 	return a
 }
 
 type AttachedQueryParamMaybe[T any] struct {
-	qp *QueryParamMaybe[T]
+	qp *QueryParamMaybeType[T]
 }
 
 func (p *AttachedQueryParamMaybe[T]) ParseRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (context.Context, error) {
@@ -40,8 +40,25 @@ func (p *AttachedQueryParamMaybe[T]) ParseRequest(ctx context.Context, w http.Re
 	}
 	return context.WithValue(ctx, queryParamKeyType(p.qp.Name), &v), nil
 }
+
 func (p *AttachedQueryParamMaybe[T]) GetRequestMaybe(r *http.Request) (*T, bool) {
 	return p.GetMaybe(r.Context())
+}
+
+func (p *AttachedQueryParamMaybe[T]) GetRequestMaybeDefault(r *http.Request, defaultVal T) T {
+	v, ok := p.GetRequestMaybe(r)
+	if !ok {
+		return defaultVal
+	}
+	return *v
+}
+
+func (p *AttachedQueryParamMaybe[T]) GetMaybeDefault(ctx context.Context, defaultVal T) T {
+	v, ok := p.GetMaybe(ctx)
+	if !ok {
+		return defaultVal
+	}
+	return *v
 }
 
 func (p *AttachedQueryParamMaybe[T]) GetMaybe(ctx context.Context) (*T, bool) {
@@ -56,11 +73,11 @@ func (p *AttachedQueryParamMaybe[T]) GetMaybe(ctx context.Context) (*T, bool) {
 	return vptr, true
 }
 
-func NewQueryParamMaybe[T any](
+func QueryParamMaybe[T any](
 	name string,
 	parser QueryParamMaybeParser[T],
-) *QueryParamMaybe[T] {
-	return &QueryParamMaybe[T]{
+) *QueryParamMaybeType[T] {
+	return &QueryParamMaybeType[T]{
 		name, parser,
 	}
 }

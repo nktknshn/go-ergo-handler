@@ -10,18 +10,18 @@ type tokenValidator[T any, K any] interface {
 	ValidateToken(ctx context.Context, token string) (*T, bool, error)
 }
 
-type AuthParserMaybe[T any, K any] struct {
+type AuthParserMaybeType[T any, K any] struct {
 	key         K
 	tokenParser tokenParserFunc
 }
 
 type tokenParserFunc = func(ctx context.Context, r *http.Request) (string, bool, error)
 
-func NewAuthParserMaybe[T any, K any](key K, tokenParser tokenParserFunc) *AuthParserMaybe[T, K] {
-	return &AuthParserMaybe[T, K]{key, tokenParser}
+func AuthParserMaybe[T any, K any](key K, tokenParser tokenParserFunc) *AuthParserMaybeType[T, K] {
+	return &AuthParserMaybeType[T, K]{key, tokenParser}
 }
 
-func (a *AuthParserMaybe[T, K]) Attach(deps tokenValidator[T, K], builder HandlerBuilder) *AttachedAuthParserMaybe[T, K] {
+func (a *AuthParserMaybeType[T, K]) Attach(deps tokenValidator[T, K], builder HandlerBuilder) *AttachedAuthParserMaybe[T, K] {
 	attached := &AttachedAuthParserMaybe[T, K]{deps, a.tokenParser, a.key}
 	builder.AddParser(attached)
 	return attached

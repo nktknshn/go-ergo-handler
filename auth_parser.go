@@ -16,16 +16,16 @@ var (
 	ErrNoUser  = errors.New("no user")
 )
 
-type AuthParser[T any, K any] struct {
+type AuthParserType[T any, K any] struct {
 	key         K
 	tokenParser tokenParserFunc
 }
 
-func NewAuthParser[T any, K any](key K, tokenParser tokenParserFunc) *AuthParser[T, K] {
-	return &AuthParser[T, K]{key, tokenParser}
+func AuthParser[T any, K any](key K, tokenParser tokenParserFunc) *AuthParserType[T, K] {
+	return &AuthParserType[T, K]{key, tokenParser}
 }
 
-func (a *AuthParser[T, K]) Attach(deps tokenValidator[T, K], builder HandlerBuilder) *AttachedAuthParser[T, K] {
+func (a *AuthParserType[T, K]) Attach(deps tokenValidator[T, K], builder HandlerBuilder) *AttachedAuthParser[T, K] {
 	attached := &AttachedAuthParser[T, K]{deps, a.tokenParser, a.key}
 	builder.AddParser(attached)
 	return attached

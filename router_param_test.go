@@ -14,7 +14,7 @@ import (
 
 func TestRouterParam(t *testing.T) {
 	builder := geh.New()
-	routerParam := geh.NewRouterParam("id", func(ctx context.Context, v string) (int, error) {
+	routerParam := geh.RouterParam("id", func(ctx context.Context, v string) (int, error) {
 		return strconv.Atoi(v)
 	})
 	attached := routerParam.Attach(builder)

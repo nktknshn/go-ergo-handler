@@ -20,3 +20,8 @@ type WithValidation interface {
 type WithParser[T any] interface {
 	Parse(ctx context.Context, v string) (T, error)
 }
+
+type WithParserAndValidation[T any] interface {
+	WithParser[T]
+	WithValidation
+}

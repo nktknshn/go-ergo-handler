@@ -13,34 +13,41 @@ type routerParamKeyType string
 
 type RouteParamParserFunc[T any] func(ctx context.Context, v string) (T, error)
 
-type RouterParam[T any] struct {
+type RouterParamType[T any] struct {
 	Name       string
 	Parser     RouteParamParserFunc[T]
 	ErrParsing error
 	ErrMissing error
 }
 
+func RouterParam[T any](name string, parser RouteParamParserFunc[T]) *RouterParamType[T] {
+	return &RouterParamType[T]{
+		Name:   name,
+		Parser: parser,
+	}
+}
+
 var ErrorRouterParamMissing = errors.New("router param missing")
 
-func NewRouterParamMissingError(paramName string) error {
+func newRouterParamMissingError(paramName string) error {
 	return fmt.Errorf("%w: %s", ErrorRouterParamMissing, paramName)
 }
 
-func (rp *RouterParam[T]) Attach(builder HandlerBuilder) *AttachedRouterParam[T] {
+func (rp *RouterParamType[T]) Attach(builder HandlerBuilder) *AttachedRouterParam[T] {
 	a := &AttachedRouterParam[T]{rp}
 	builder.AddParser(a)
 	return a
 }
 
 type AttachedRouterParam[T any] struct {
-	rp *RouterParam[T]
+	rp *RouterParamType[T]
 }
 
 func (p *AttachedRouterParam[T]) ParseRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (context.Context, error) {
 	vars := mux.Vars(r)
 	v, ok := vars[p.rp.Name]
 	if !ok {
-		err := NewRouterParamMissingError(p.rp.Name)
+		err := newRouterParamMissingError(p.rp.Name)
 		return ctx, WrapError(err, defaultHttpStatusCodeErrParsing)
 	}
 	vt, err := p.rp.Parser(ctx, v)
@@ -71,11 +78,4 @@ func (p *AttachedRouterParam[T]) Get(ctx context.Context) T {
 		panic(builderCastError)
 	}
 	return casted
-}
-
-func NewRouterParam[T any](name string, parser RouteParamParserFunc[T]) *RouterParam[T] {
-	return &RouterParam[T]{
-		Name:   name,
-		Parser: parser,
-	}
 }

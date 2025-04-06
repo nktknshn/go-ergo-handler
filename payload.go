@@ -14,26 +14,22 @@ var (
 	ErrPayloadParserError error          = errors.New("payload parser error")
 )
 
-type PayloadWithValidation[T PayloadWithValidationErrorType] struct {
+type PayloadParserType[T any] struct {
 	Payload   T
 	ParserErr error
 }
 
-type PayloadWithValidationErrorType interface {
-	Validate() error
-}
-
-func (p *PayloadWithValidation[T]) Attach(builder HandlerBuilder) *AttachedPayloadWithValidation[T] {
-	a := &AttachedPayloadWithValidation[T]{p}
+func (p *PayloadParserType[T]) Attach(builder HandlerBuilder) *AttachedPayloadParser[T] {
+	a := &AttachedPayloadParser[T]{p}
 	builder.AddParser(a)
 	return a
 }
 
-type AttachedPayloadWithValidation[T PayloadWithValidationErrorType] struct {
-	p *PayloadWithValidation[T]
+type AttachedPayloadParser[T any] struct {
+	p *PayloadParserType[T]
 }
 
-func (p *AttachedPayloadWithValidation[T]) ParseRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (context.Context, error) {
+func (p *AttachedPayloadParser[T]) ParseRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (context.Context, error) {
 	var pl T
 	err := json.NewDecoder(r.Body).Decode(&pl)
 	if err != nil {
@@ -43,18 +39,21 @@ func (p *AttachedPayloadWithValidation[T]) ParseRequest(ctx context.Context, w h
 		}
 		return ctx, WrapError(parseErr, defaultHttpStatusCodeErrParsing)
 	}
-	valErr := pl.Validate()
-	if valErr != nil {
-		return ctx, WrapError(valErr, defaultHttpStatusCodeErrParsing)
+	validatable, ok := any(pl).(WithValidation)
+	if ok {
+		err = validatable.Validate()
+		if err != nil {
+			return ctx, WrapError(err, defaultHttpStatusCodeErrParsing)
+		}
 	}
 	return context.WithValue(ctx, payloadKey, pl), nil
 }
 
-func (p *AttachedPayloadWithValidation[T]) GetRequest(r *http.Request) T {
-	return p.Get(r.Context())
+func (p *AttachedPayloadParser[T]) GetRequest(r *http.Request) T {
+	return p.GetContext(r.Context())
 }
 
-func (p *AttachedPayloadWithValidation[T]) Get(ctx context.Context) T {
+func (p *AttachedPayloadParser[T]) GetContext(ctx context.Context) T {
 	v := ctx.Value(payloadKey)
 	if v == nil {
 		panic(builderMissingKey)
@@ -62,6 +61,6 @@ func (p *AttachedPayloadWithValidation[T]) Get(ctx context.Context) T {
 	return v.(T)
 }
 
-func NewPayloadWithValidation[T PayloadWithValidationErrorType]() *PayloadWithValidation[T] {
-	return &PayloadWithValidation[T]{}
+func Payload[T any]() *PayloadParserType[T] {
+	return &PayloadParserType[T]{}
 }
