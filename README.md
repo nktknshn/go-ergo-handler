@@ -4,7 +4,7 @@ Ergonomic HTTP handlers builder for Go.
 
 ## About
 
-This library can help you building robust type-safe HTTP-handlers from reusable parsers and middlewares. 
+This library can help you building robust type-safe HTTP-handlers from reusable middlewares. 
 
 ## Installation
 
