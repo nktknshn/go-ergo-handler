@@ -29,7 +29,7 @@ func TestPayloadWithValidation(t *testing.T) {
 	attachedPayload := payload.Attach(builder)
 
 	handler := builder.BuildHandler(func(w http.ResponseWriter, r *http.Request) {
-		payload := attachedPayload.GetRequest(r)
+		payload := attachedPayload.Get(r)
 		w.Write([]byte(payload.SomeKey))
 	})
 

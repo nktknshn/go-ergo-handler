@@ -21,7 +21,7 @@ func TestQueryParam_ParseRequest(t *testing.T) {
 	attachedQueryParam := queryParam.Attach(builder)
 
 	handler := builder.BuildHandler(func(w http.ResponseWriter, r *http.Request) {
-		queryParam := attachedQueryParam.GetRequest(r)
+		queryParam := attachedQueryParam.Get(r)
 		w.Write([]byte(queryParam))
 	})
 
@@ -58,7 +58,7 @@ func TestQueryParam_ParseRequest_WithValidation(t *testing.T) {
 	attachedQueryParam := queryParam.Attach(builder)
 
 	handler := builder.BuildHandler(func(w http.ResponseWriter, r *http.Request) {
-		queryParam := attachedQueryParam.GetRequest(r)
+		queryParam := attachedQueryParam.Get(r)
 		w.Write([]byte(strconv.Itoa(int(queryParam))))
 	})
 

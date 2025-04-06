@@ -41,27 +41,27 @@ func (p *AttachedQueryParamMaybe[T]) ParseRequest(ctx context.Context, w http.Re
 	return context.WithValue(ctx, queryParamKeyType(p.qp.Name), &v), nil
 }
 
-func (p *AttachedQueryParamMaybe[T]) GetRequestMaybe(r *http.Request) (*T, bool) {
-	return p.GetMaybe(r.Context())
+func (p *AttachedQueryParamMaybe[T]) GetMaybe(r *http.Request) (*T, bool) {
+	return p.GetContextMaybe(r.Context())
 }
 
-func (p *AttachedQueryParamMaybe[T]) GetRequestMaybeDefault(r *http.Request, defaultVal T) T {
-	v, ok := p.GetRequestMaybe(r)
+func (p *AttachedQueryParamMaybe[T]) GetDefault(r *http.Request, defaultVal T) T {
+	v, ok := p.GetMaybe(r)
 	if !ok {
 		return defaultVal
 	}
 	return *v
 }
 
-func (p *AttachedQueryParamMaybe[T]) GetMaybeDefault(ctx context.Context, defaultVal T) T {
-	v, ok := p.GetMaybe(ctx)
+func (p *AttachedQueryParamMaybe[T]) GetContextDefault(ctx context.Context, defaultVal T) T {
+	v, ok := p.GetContextMaybe(ctx)
 	if !ok {
 		return defaultVal
 	}
 	return *v
 }
 
-func (p *AttachedQueryParamMaybe[T]) GetMaybe(ctx context.Context) (*T, bool) {
+func (p *AttachedQueryParamMaybe[T]) GetContextMaybe(ctx context.Context) (*T, bool) {
 	v := ctx.Value(queryParamKeyType(p.qp.Name))
 	if v == nil {
 		return nil, false

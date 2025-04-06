@@ -49,11 +49,11 @@ func (p *AttachedQueryParamWithParser[T]) ParseRequest(ctx context.Context, w ht
 	return context.WithValue(ctx, queryParamKeyType(p.qp.Name), v), nil
 }
 
-func (p *AttachedQueryParamWithParser[T]) GetRequest(r *http.Request) T {
-	return p.Get(r.Context())
+func (p *AttachedQueryParamWithParser[T]) Get(r *http.Request) T {
+	return p.GetContext(r.Context())
 }
 
-func (p *AttachedQueryParamWithParser[T]) Get(ctx context.Context) T {
+func (p *AttachedQueryParamWithParser[T]) GetContext(ctx context.Context) T {
 	v := ctx.Value(queryParamKeyType(p.qp.Name))
 	if v == nil {
 		panic(newBuilderCastError("error casting..."))

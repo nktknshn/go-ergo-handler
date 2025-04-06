@@ -49,7 +49,7 @@ func (p *AttachedPayloadParser[T]) ParseRequest(ctx context.Context, w http.Resp
 	return context.WithValue(ctx, payloadKey, pl), nil
 }
 
-func (p *AttachedPayloadParser[T]) GetRequest(r *http.Request) T {
+func (p *AttachedPayloadParser[T]) Get(r *http.Request) T {
 	return p.GetContext(r.Context())
 }
 

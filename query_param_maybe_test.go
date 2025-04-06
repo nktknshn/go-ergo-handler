@@ -25,7 +25,7 @@ func TestQueryParamMaybe_ParseRequest(t *testing.T) {
 	attachedQueryParam := queryParam.Attach(builder)
 
 	handler := builder.BuildHandler(func(w http.ResponseWriter, r *http.Request) {
-		queryParam, _ := attachedQueryParam.GetRequestMaybe(r)
+		queryParam, _ := attachedQueryParam.GetMaybe(r)
 		if queryParam == nil {
 			w.Write([]byte(`NO QUERY PARAM`))
 			return

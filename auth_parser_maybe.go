@@ -33,7 +33,7 @@ type AttachedAuthParserMaybe[T any, K any] struct {
 	key         K
 }
 
-func (a *AttachedAuthParserMaybe[T, K]) GetUserMaybe(ctx context.Context) (*T, bool) {
+func (a *AttachedAuthParserMaybe[T, K]) GetContextMaybe(ctx context.Context) (*T, bool) {
 	data, ok := ctx.Value(a.key).(*T)
 	if !ok {
 		return nil, false
@@ -41,8 +41,8 @@ func (a *AttachedAuthParserMaybe[T, K]) GetUserMaybe(ctx context.Context) (*T, b
 	return data, true
 }
 
-func (a *AttachedAuthParserMaybe[T, K]) GetUserRequestMaybe(r *http.Request) (*T, bool) {
-	return a.GetUserMaybe(r.Context())
+func (a *AttachedAuthParserMaybe[T, K]) GetMaybe(r *http.Request) (*T, bool) {
+	return a.GetContextMaybe(r.Context())
 }
 
 func (a *AttachedAuthParserMaybe[T, K]) ParseRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (context.Context, error) {

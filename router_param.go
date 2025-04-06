@@ -64,11 +64,11 @@ func (p *AttachedRouterParam[T]) ParseRequest(ctx context.Context, w http.Respon
 	return context.WithValue(ctx, routerParamKeyType(p.rp.Name), vt), nil
 }
 
-func (p *AttachedRouterParam[T]) GetRequest(r *http.Request) T {
-	return p.Get(r.Context())
+func (p *AttachedRouterParam[T]) Get(r *http.Request) T {
+	return p.GetContext(r.Context())
 }
 
-func (p *AttachedRouterParam[T]) Get(ctx context.Context) T {
+func (p *AttachedRouterParam[T]) GetContext(ctx context.Context) T {
 	v := ctx.Value(routerParamKeyType(p.rp.Name))
 	if v == nil {
 		panic(builderMissingKey)

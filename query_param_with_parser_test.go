@@ -24,7 +24,7 @@ func TestQueryParamWithParser(t *testing.T) {
 	attachedQueryParam := queryParam.Attach(builder)
 
 	handler := builder.BuildHandler(func(w http.ResponseWriter, r *http.Request) {
-		queryParam := attachedQueryParam.GetRequest(r)
+		queryParam := attachedQueryParam.Get(r)
 		w.Write([]byte(queryParam))
 	})
 

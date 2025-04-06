@@ -48,27 +48,35 @@ func (p paramBookIDType) Validate() error {
 	return nil
 }
 
+var (
+	paramBookID    = geh.RouterParamWithParser[paramBookIDType]("book_id", errors.New("book_id is required"))
+	payloadBook    = geh.Payload[payloadType]()
+	paramUnpublish = geh.QueryParamMaybe("unpublish", geh.IgnoreContext(strconv.ParseBool))
+)
+
 func makeHttpHandler(useCase interface {
-	UpdateBook(ctx context.Context, bookID int, payload payloadType) error
+	UpdateBook(ctx context.Context, bookID int, payload payloadType, unpublish bool) error
 }) http.Handler {
 	var (
-		builder = goergohandler.New()
-		bookID  = paramBookID.Attach(builder)
-		payload = payloadBook.Attach(builder)
-		handler = builder.BuildHandlerWrapped(func(w http.ResponseWriter, r *http.Request) (any, error) {
-            // the request is parsed and validated at this point
-			bid := bookID.GetRequest(r)
-			pl := payload.GetRequest(r)
-			err := useCase.UpdateBook(r.Context(), int(bid), pl)
-			if err != nil {
-				return nil, err
-			}
-			return nil, nil
-		})
+		builder   = geh.New()
+		bookID    = paramBookID.Attach(builder)
+		payload   = payloadBook.Attach(builder)
+		unpublish = paramUnpublish.Attach(builder)
 	)
 
-	return handler
+	return builder.BuildHandlerWrapped(func(w http.ResponseWriter, r *http.Request) (any, error) {
+		// all values are parsed and validated at this point
+		bid := bookID.Get(r)
+		pl := payload.Get(r)
+		unpublish := unpublish.GetMaybeDefault(r, false)
+		err := useCase.UpdateBook(r.Context(), int(bid), pl, unpublish)
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	})
 }
+
 ```
 
 ## Usage
@@ -89,7 +97,10 @@ https://github.com/nktknshn/go-ergo-handler-example/blob/master/internal/adapter
 custom http code
 https://github.com/nktknshn/go-ergo-handler-example/blob/master/internal/adapters/http_adapter/handlers/create_favorite_book/create_favorite_book.go
 
-custom parser
+authentication
+https://github.com/nktknshn/go-ergo-handler-example/blob/master/internal/adapters/http_adapter/handlers/handlers_user_auth/user_auth_parser.go
+
+custom parser and authorization
 https://github.com/nktknshn/go-ergo-handler-example/blob/master/internal/adapters/http_adapter/handlers/handler_admin_role_checker/handler_admin_role_checker.go
 
 custom error handler

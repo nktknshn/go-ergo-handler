@@ -46,11 +46,11 @@ func (p *AttachedQueryParam[T]) ParseRequest(ctx context.Context, w http.Respons
 	return context.WithValue(ctx, queryParamKeyType(p.qp.Name), v), nil
 }
 
-func (p *AttachedQueryParam[T]) GetRequest(r *http.Request) T {
-	return p.Get(r.Context())
+func (p *AttachedQueryParam[T]) Get(r *http.Request) T {
+	return p.GetContext(r.Context())
 }
 
-func (p *AttachedQueryParam[T]) Get(ctx context.Context) T {
+func (p *AttachedQueryParam[T]) GetContext(ctx context.Context) T {
 	v := ctx.Value(queryParamKeyType(p.qp.Name))
 	if v == nil {
 		// return *new(T), p.qp.ErrMissing

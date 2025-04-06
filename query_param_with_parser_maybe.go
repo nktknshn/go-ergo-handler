@@ -48,11 +48,19 @@ func (p *AttachedQueryParamWithParserMaybe[T]) ParseRequest(ctx context.Context,
 	return context.WithValue(ctx, queryParamKeyType(p.qp.Name), v), nil
 }
 
-func (p *AttachedQueryParamWithParserMaybe[T]) GetRequestMaybe(r *http.Request) (*T, bool) {
-	return p.GetMaybe(r.Context())
+func (p *AttachedQueryParamWithParserMaybe[T]) GetMaybe(r *http.Request) (*T, bool) {
+	return p.GetContextMaybe(r.Context())
 }
 
-func (p *AttachedQueryParamWithParserMaybe[T]) GetMaybe(ctx context.Context) (*T, bool) {
+func (p *AttachedQueryParamWithParserMaybe[T]) GetDefault(r *http.Request, defaultVal T) T {
+	v, ok := p.GetMaybe(r)
+	if !ok {
+		return defaultVal
+	}
+	return *v
+}
+
+func (p *AttachedQueryParamWithParserMaybe[T]) GetContextMaybe(ctx context.Context) (*T, bool) {
 	v := ctx.Value(queryParamKeyType(p.qp.Name))
 	if v == nil {
 		return nil, false

@@ -50,7 +50,7 @@ func (p *AttachedRouterParamWithParser[T]) ParseRequest(ctx context.Context, w h
 	return context.WithValue(ctx, routerParamKeyType(p.rp.Name), vt), nil
 }
 
-func (p *AttachedRouterParamWithParser[T]) GetRequest(r *http.Request) T {
+func (p *AttachedRouterParamWithParser[T]) Get(r *http.Request) T {
 	return p.GetContext(r.Context())
 }
 

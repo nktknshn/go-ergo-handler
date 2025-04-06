@@ -37,7 +37,7 @@ type AttachedAuthParser[T any, K any] struct {
 	key         K
 }
 
-func (a *AttachedAuthParser[T, K]) GetUser(ctx context.Context) *T {
+func (a *AttachedAuthParser[T, K]) GetContext(ctx context.Context) *T {
 	data, ok := ctx.Value(a.key).(*T)
 	if !ok {
 		return nil
@@ -45,8 +45,8 @@ func (a *AttachedAuthParser[T, K]) GetUser(ctx context.Context) *T {
 	return data
 }
 
-func (a *AttachedAuthParser[T, K]) GetUserRequest(r *http.Request) *T {
-	return a.GetUser(r.Context())
+func (a *AttachedAuthParser[T, K]) Get(r *http.Request) *T {
+	return a.GetContext(r.Context())
 }
 
 func (a *AttachedAuthParser[T, K]) ParseRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (context.Context, error) {

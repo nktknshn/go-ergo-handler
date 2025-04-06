@@ -59,20 +59,19 @@ func makeHttpHandler(useCase interface {
 		bookID    = paramBookID.Attach(builder)
 		payload   = payloadBook.Attach(builder)
 		unpublish = paramUnpublish.Attach(builder)
-		handler   = builder.BuildHandlerWrapped(func(w http.ResponseWriter, r *http.Request) (any, error) {
-			// all values are parsed and validated at this point
-			bid := bookID.GetRequest(r)
-			pl := payload.GetRequest(r)
-			unpublish := unpublish.GetRequestMaybeDefault(r, false)
-			err := useCase.UpdateBook(r.Context(), int(bid), pl, unpublish)
-			if err != nil {
-				return nil, err
-			}
-			return nil, nil
-		})
 	)
 
-	return handler
+	return builder.BuildHandlerWrapped(func(w http.ResponseWriter, r *http.Request) (any, error) {
+		// all values are parsed and validated at this point
+		bid := bookID.Get(r)
+		pl := payload.Get(r)
+		unpublish := unpublish.GetDefault(r, false)
+		err := useCase.UpdateBook(r.Context(), int(bid), pl, unpublish)
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	})
 }
 
 type useCase struct{}

@@ -19,7 +19,7 @@ func TestRouterParam(t *testing.T) {
 	})
 	attached := routerParam.Attach(builder)
 	router := builder.BuildHandler(func(w http.ResponseWriter, r *http.Request) {
-		id := attached.GetRequest(r)
+		id := attached.Get(r)
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(strconv.Itoa(id)))
 	})
