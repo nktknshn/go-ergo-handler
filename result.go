@@ -7,6 +7,13 @@ type ResponseWithHttpStatus struct {
 	Response       any
 }
 
+func NewResponseWithHttpStatus(httpStatusCode int, response any) ResponseWithHttpStatus {
+	return ResponseWithHttpStatus{
+		HttpStatusCode: httpStatusCode,
+		Response:       response,
+	}
+}
+
 // SetHeader sets the header for the response
 func (r *ResponseWithHttpStatus) SetHeaders(w http.ResponseWriter) {
 	if r.HttpStatusCode != 0 {
