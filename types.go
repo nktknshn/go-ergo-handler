@@ -12,3 +12,11 @@ type ValueParser interface {
 type ParserAdder interface {
 	AddParser(parser ValueParser)
 }
+
+type WithValidation interface {
+	Validate() error
+}
+
+type WithParser[T any] interface {
+	Parse(ctx context.Context, v string) (T, error)
+}

@@ -31,9 +31,15 @@ func (p *AttachedQueryParamMaybe[T]) ParseRequest(ctx context.Context, w http.Re
 	if err != nil {
 		return ctx, WrapError(err, defaultHttpStatusCodeErrParsing)
 	}
+	validatable, ok := any(v).(WithValidation)
+	if ok {
+		err = validatable.Validate()
+		if err != nil {
+			return ctx, WrapError(err, defaultHttpStatusCodeErrParsing)
+		}
+	}
 	return context.WithValue(ctx, queryParamKeyType(p.qp.Name), &v), nil
 }
-
 func (p *AttachedQueryParamMaybe[T]) GetRequestMaybe(r *http.Request) (*T, bool) {
 	return p.GetMaybe(r.Context())
 }

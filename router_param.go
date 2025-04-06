@@ -39,18 +39,21 @@ type AttachedRouterParam[T any] struct {
 func (p *AttachedRouterParam[T]) ParseRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (context.Context, error) {
 	vars := mux.Vars(r)
 	v, ok := vars[p.rp.Name]
-
 	if !ok {
 		err := NewRouterParamMissingError(p.rp.Name)
 		return ctx, WrapError(err, defaultHttpStatusCodeErrParsing)
 	}
-
 	vt, err := p.rp.Parser(ctx, v)
-
 	if err != nil {
 		return ctx, WrapError(err, defaultHttpStatusCodeErrParsing)
 	}
-
+	validatable, ok := any(vt).(WithValidation)
+	if ok {
+		err = validatable.Validate()
+		if err != nil {
+			return ctx, WrapError(err, defaultHttpStatusCodeErrParsing)
+		}
+	}
 	return context.WithValue(ctx, routerParamKeyType(p.rp.Name), vt), nil
 }
 

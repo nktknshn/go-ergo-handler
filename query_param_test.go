@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	goergohandler "github.com/nktknshn/go-ergo-handler"
@@ -35,5 +36,36 @@ func TestQueryParam_ParseRequest(t *testing.T) {
 	handler.ServeHTTP(w, r)
 
 	require.Equal(t, w.Body.String(), `{"error":"some_key is required"}`)
+	require.Equal(t, w.Code, http.StatusBadRequest)
+}
+
+type paramBookIDType int
+
+func (p paramBookIDType) Validate() error {
+	if p <= 0 {
+		return errors.New("invalid book id")
+	}
+	return nil
+}
+
+func TestQueryParam_ParseRequest_WithValidation(t *testing.T) {
+	queryParam := goergohandler.NewQueryParam("some_key", func(ctx context.Context, v string) (paramBookIDType, error) {
+		vint, _ := strconv.Atoi(v)
+		return paramBookIDType(vint), nil
+	}, errors.New("some_key is required"))
+
+	builder := goergohandler.New()
+	attachedQueryParam := queryParam.Attach(builder)
+
+	handler := builder.BuildHandler(func(w http.ResponseWriter, r *http.Request) {
+		queryParam := attachedQueryParam.GetRequest(r)
+		w.Write([]byte(strconv.Itoa(int(queryParam))))
+	})
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "/?some_key=0", nil)
+	handler.ServeHTTP(w, r)
+
+	require.Equal(t, w.Body.String(), `{"error":"invalid book id"}`)
 	require.Equal(t, w.Code, http.StatusBadRequest)
 }

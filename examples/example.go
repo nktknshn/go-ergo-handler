@@ -24,13 +24,28 @@ func (p payloadType) Validate() error {
 	return nil
 }
 
+type paramBookIDType int
+
+func parseParamBookID(ctx context.Context, v string) (paramBookIDType, error) {
+	vint, err := strconv.Atoi(v)
+	if err != nil {
+		return 0, err
+	}
+	return paramBookIDType(vint), nil
+}
+
+func (p paramBookIDType) Validate() error {
+	if p <= 0 {
+		return errors.New("invalid book id")
+	}
+	return nil
+}
+
 func makeHttpHandler(useCase interface {
 	UpdateBook(ctx context.Context, bookID int, payload payloadType) error
 }) http.Handler {
 	var (
-		paramBookID = goergohandler.NewRouterParam("book_id", func(ctx context.Context, v string) (int, error) {
-			return strconv.Atoi(v)
-		})
+		paramBookID = goergohandler.NewRouterParam("book_id", parseParamBookID)
 		payloadBook = goergohandler.NewPayloadWithValidation[payloadType]()
 
 		builder = goergohandler.New()
@@ -39,7 +54,7 @@ func makeHttpHandler(useCase interface {
 		handler = builder.BuildHandlerWrapped(func(w http.ResponseWriter, r *http.Request) (any, error) {
 			bid := bookID.GetRequest(r)
 			pl := payload.GetRequest(r)
-			err := useCase.UpdateBook(r.Context(), bid, pl)
+			err := useCase.UpdateBook(r.Context(), int(bid), pl)
 			if err != nil {
 				return nil, err
 			}

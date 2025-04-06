@@ -36,6 +36,13 @@ func (p *AttachedQueryParam[T]) ParseRequest(ctx context.Context, w http.Respons
 	if err != nil {
 		return ctx, WrapError(err, defaultHttpStatusCodeErrParsing)
 	}
+	validatable, ok := any(v).(WithValidation)
+	if ok {
+		err = validatable.Validate()
+		if err != nil {
+			return ctx, WrapError(err, defaultHttpStatusCodeErrParsing)
+		}
+	}
 	return context.WithValue(ctx, queryParamKeyType(p.qp.Name), v), nil
 }
 
