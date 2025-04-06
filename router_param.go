@@ -39,6 +39,7 @@ type AttachedRouterParam[T any] struct {
 func (p *AttachedRouterParam[T]) ParseRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (context.Context, error) {
 	vars := mux.Vars(r)
 	v, ok := vars[p.rp.Name]
+
 	if !ok {
 		err := NewRouterParamMissingError(p.rp.Name)
 		return ctx, WrapError(err, defaultHttpStatusCodeErrParsing)
@@ -58,11 +59,15 @@ func (p *AttachedRouterParam[T]) GetRequest(r *http.Request) T {
 }
 
 func (p *AttachedRouterParam[T]) Get(ctx context.Context) T {
-	v := ctx.Value(queryParamKeyType(p.rp.Name))
+	v := ctx.Value(routerParamKeyType(p.rp.Name))
 	if v == nil {
 		panic(builderMissingKey)
 	}
-	return v.(T)
+	casted, ok := v.(T)
+	if !ok {
+		panic(builderCastError)
+	}
+	return casted
 }
 
 func NewRouterParam[T any](name string, parser RouteParamParserFunc[T]) *RouterParam[T] {
