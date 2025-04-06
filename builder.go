@@ -65,6 +65,10 @@ var DefaultHandlerResultFunc HandleResultFunc = func(_ context.Context, w http.R
 		w.WriteHeader(http.StatusOK)
 	}
 
+	if resultData == nil {
+		resultData = struct{}{}
+	}
+
 	bs, err := json.Marshal(successResponse{Success: true, Result: resultData})
 	if err != nil {
 		slog.Error("error marshalling json", "error", err)

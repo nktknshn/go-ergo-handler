@@ -27,6 +27,13 @@ func TestBuilder_BuildHandlerWrapped(t *testing.T) {
 
 	cases := []testCase{
 		{
+			name:         "returns nil, nil",
+			result:       nil,
+			error:        nil,
+			expectedCode: http.StatusOK,
+			expectedBody: `{"success":true,"result":{}}`,
+		},
+		{
 			name:         "success",
 			result:       map[string]string{"some_key": "some_value"},
 			error:        nil,
