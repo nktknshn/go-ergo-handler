@@ -3,6 +3,7 @@ package goergohandler_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -40,21 +41,21 @@ func TestBuilder_BuildHandlerWrapped(t *testing.T) {
 			expectedBody: `{"error":"some error"}`,
 		},
 		{
-			name:         "error with code",
+			name:         "error with http status code",
 			result:       nil,
 			error:        geh.NewError(http.StatusBadRequest, errors.New("some error")),
 			expectedCode: http.StatusBadRequest,
 			expectedBody: `{"error":"some error"}`,
 		},
 		{
-			name:         "result with code",
+			name:         "result with http status code",
 			result:       geh.NewResponseWithHttpStatus(http.StatusAccepted, map[string]string{"some_key": "some_value"}),
 			error:        nil,
 			expectedCode: http.StatusAccepted,
 			expectedBody: `{"success":true,"result":{"some_key":"some_value"}}`,
 		},
 		{
-			name: "custom error func",
+			name: "custom error handler func",
 			customErrorFunc: func(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) {
 				w.WriteHeader(http.StatusBadRequest)
 				w.Header().Set("Content-Type", "text/plain")
@@ -67,8 +68,25 @@ func TestBuilder_BuildHandlerWrapped(t *testing.T) {
 				require.Equal(t, w.Header().Get("Content-Type"), "text/plain")
 			},
 		},
+		{
+			name: "custom result handler func",
+			customResultFunc: func(ctx context.Context, w http.ResponseWriter, r *http.Request, result any) {
+				resultMap := result.(map[string]string)
+				w.WriteHeader(http.StatusAccepted)
+				w.Header().Set("Content-Type", "text/plain")
+				for k, v := range resultMap {
+					w.Write([]byte(fmt.Sprintf("%s=%s", k, v)))
+				}
+			},
+			result:       map[string]string{"some_key": "some_value"},
+			error:        nil,
+			expectedCode: http.StatusAccepted,
+			expectedBody: `some_key=some_value`,
+			customCheck: func(t *testing.T, w *httptest.ResponseRecorder) {
+				require.Equal(t, w.Header().Get("Content-Type"), "text/plain")
+			},
+		},
 	}
-
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			b := geh.New()
