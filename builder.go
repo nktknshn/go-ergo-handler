@@ -30,7 +30,7 @@ type successResponse struct {
 }
 
 // by default, the error will be marshalled to json {"error": "error message"}
-var defaultHandlerErrorFunc HandleErrorFunc = func(_ context.Context, w http.ResponseWriter, _ *http.Request, err error) {
+var DefaultHandlerErrorFunc HandleErrorFunc = func(_ context.Context, w http.ResponseWriter, _ *http.Request, err error) {
 	w.Header().Set("Content-Type", "application/json")
 
 	switch err := err.(type) {
@@ -53,7 +53,7 @@ var defaultHandlerErrorFunc HandleErrorFunc = func(_ context.Context, w http.Res
 }
 
 // by default, the result will be marshalled to json {"success": true, "result": result}
-var defaultHandlerResultFunc HandleResultFunc = func(_ context.Context, w http.ResponseWriter, _ *http.Request, result any) {
+var DefaultHandlerResultFunc HandleResultFunc = func(_ context.Context, w http.ResponseWriter, _ *http.Request, result any) {
 	resultData := result
 	w.Header().Set("Content-Type", "application/json")
 
@@ -115,7 +115,7 @@ func (b *Builder) BuildHandlerWrapped(f func(h http.ResponseWriter, r *http.Requ
 		}
 
 		if err != nil {
-			defaultHandlerErrorFunc(r.Context(), w, r, err)
+			DefaultHandlerErrorFunc(r.Context(), w, r, err)
 			return
 		}
 
@@ -124,7 +124,7 @@ func (b *Builder) BuildHandlerWrapped(f func(h http.ResponseWriter, r *http.Requ
 			return
 		}
 
-		defaultHandlerResultFunc(r.Context(), w, r, result)
+		DefaultHandlerResultFunc(r.Context(), w, r, result)
 	})
 
 	return b.ApplyMiddleware(wrapped)
@@ -152,7 +152,7 @@ func ValueParserToMiddleware(parser ValueParser, handlerErrorFunc HandleErrorFun
 					handlerErrorFunc(ctx, w, r, err)
 					return
 				}
-				defaultHandlerErrorFunc(ctx, w, r, err)
+				DefaultHandlerErrorFunc(ctx, w, r, err)
 				return
 			}
 			next.ServeHTTP(w, r.WithContext(ctx))
