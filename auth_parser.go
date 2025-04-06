@@ -25,14 +25,14 @@ func NewAuthParser[T any, K any](key K, tokenParser tokenParserFunc) *AuthParser
 	return &AuthParser[T, K]{key, tokenParser}
 }
 
-func (a *AuthParser[T, K]) Attach(deps userGetter[T, K], builder HandlerBuilder) *AttachedAuthParser[T, K] {
+func (a *AuthParser[T, K]) Attach(deps tokenValidator[T, K], builder HandlerBuilder) *AttachedAuthParser[T, K] {
 	attached := &AttachedAuthParser[T, K]{deps, a.tokenParser, a.key}
 	builder.AddParser(attached)
 	return attached
 }
 
 type AttachedAuthParser[T any, K any] struct {
-	auth        userGetter[T, K]
+	auth        tokenValidator[T, K]
 	tokenParser tokenParserFunc
 	key         K
 }
@@ -57,7 +57,7 @@ func (a *AttachedAuthParser[T, K]) ParseRequest(ctx context.Context, w http.Resp
 	if !ok {
 		return ctx, WrapError(ErrNoToken, defaultHttpStatusCodeErrUnauthorized)
 	}
-	data, ok, err := a.auth.GetUser(ctx, token)
+	data, ok, err := a.auth.ValidateToken(ctx, token)
 	if err != nil {
 		return ctx, WrapError(err, defaultHttpStatusCodeErrInternal)
 	}

@@ -6,8 +6,8 @@ import (
 )
 
 // TODO: rename to tokenValidator
-type userGetter[T any, K any] interface {
-	GetUser(ctx context.Context, token string) (*T, bool, error)
+type tokenValidator[T any, K any] interface {
+	ValidateToken(ctx context.Context, token string) (*T, bool, error)
 }
 
 type AuthParserMaybe[T any, K any] struct {
@@ -21,14 +21,14 @@ func NewAuthParserMaybe[T any, K any](key K, tokenParser tokenParserFunc) *AuthP
 	return &AuthParserMaybe[T, K]{key, tokenParser}
 }
 
-func (a *AuthParserMaybe[T, K]) Attach(deps userGetter[T, K], builder HandlerBuilder) *AttachedAuthParserMaybe[T, K] {
+func (a *AuthParserMaybe[T, K]) Attach(deps tokenValidator[T, K], builder HandlerBuilder) *AttachedAuthParserMaybe[T, K] {
 	attached := &AttachedAuthParserMaybe[T, K]{deps, a.tokenParser, a.key}
 	builder.AddParser(attached)
 	return attached
 }
 
 type AttachedAuthParserMaybe[T any, K any] struct {
-	auth        userGetter[T, K]
+	auth        tokenValidator[T, K]
 	tokenParser tokenParserFunc
 	key         K
 }
@@ -53,7 +53,7 @@ func (a *AttachedAuthParserMaybe[T, K]) ParseRequest(ctx context.Context, w http
 	if !ok {
 		return ctx, nil
 	}
-	data, ok, err := a.auth.GetUser(ctx, token)
+	data, ok, err := a.auth.ValidateToken(ctx, token)
 	if err != nil {
 		return ctx, WrapError(err, defaultHttpStatusCodeErrInternal)
 	}
