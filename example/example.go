@@ -52,7 +52,7 @@ var (
 )
 
 func makeHttpHandler(useCase interface {
-	UpdateBook(ctx context.Context, bookID int, payload payloadType, unpublish bool) error
+	UpdateBook(ctx context.Context, bookID int, title string, price int, unpublish bool) error
 }) http.Handler {
 	var (
 		builder   = geh.New()
@@ -66,7 +66,7 @@ func makeHttpHandler(useCase interface {
 		bid := bookID.Get(r)
 		pl := payload.Get(r)
 		unpublish := unpublish.GetDefault(r, false)
-		err := useCase.UpdateBook(r.Context(), int(bid), pl, unpublish)
+		err := useCase.UpdateBook(r.Context(), int(bid), pl.Title, pl.Price, unpublish)
 		if err != nil {
 			return nil, err
 		}
@@ -76,8 +76,8 @@ func makeHttpHandler(useCase interface {
 
 type useCase struct{}
 
-func (u useCase) UpdateBook(ctx context.Context, bookID int, payload payloadType, unpublish bool) error {
-	fmt.Println("bookID:", bookID, "payload:", payload, "unpublish:", unpublish)
+func (u useCase) UpdateBook(ctx context.Context, bookID int, title string, price int, unpublish bool) error {
+	fmt.Println("bookID:", bookID, "title:", title, "price:", price, "unpublish:", unpublish)
 	return nil
 }
 

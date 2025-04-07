@@ -55,7 +55,7 @@ var (
 )
 
 func makeHttpHandler(useCase interface {
-	UpdateBook(ctx context.Context, bookID int, payload payloadType, unpublish bool) error
+	UpdateBook(ctx context.Context, bookID int, title string, price int, unpublish bool) error
 }) http.Handler {
 	var (
 		builder   = geh.New()
@@ -68,15 +68,14 @@ func makeHttpHandler(useCase interface {
 		// all values are parsed and validated at this point
 		bid := bookID.Get(r)
 		pl := payload.Get(r)
-		unpublish := unpublish.GetMaybeDefault(r, false)
-		err := useCase.UpdateBook(r.Context(), int(bid), pl, unpublish)
+		unpublish := unpublish.GetDefault(r, false)
+		err := useCase.UpdateBook(r.Context(), int(bid), pl.Title, pl.Price, unpublish)
 		if err != nil {
 			return nil, err
 		}
 		return nil, nil
 	})
 }
-
 ```
 
 ## Usage

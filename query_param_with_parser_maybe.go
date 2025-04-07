@@ -6,11 +6,10 @@ import (
 )
 
 type QueryParamWithParserMaybeType[T WithParser[T]] struct {
-	Name       string
-	ErrMissing error
+	Name string
 }
 
-func QueryParamWithParserMaybe[T WithParser[T]](name string, errMissing error) *QueryParamWithParserMaybeType[T] {
+func QueryParamWithParserMaybe[T WithParser[T]](name string) *QueryParamWithParserMaybeType[T] {
 	return &QueryParamWithParserMaybeType[T]{
 		Name: name,
 	}
