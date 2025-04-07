@@ -4,7 +4,11 @@ Ergonomic HTTP handlers builder for Go.
 
 ## About
 
-This library can help you building robust type-safe HTTP-handlers from reusable middlewares. 
+This library can help you build robust, type-safe HTTP-handlers from reusable middlewares. 
+
+## Concept
+
+You define parsers (basically middleware functions) that extract values from the `http.Request` and place them into the context. Before a handler is invoked, the chain of parsers is executed. If any parser fails, an error is returned, and the handler is not called. This process is similar to Either monad chaining in Functional Programming. By the time the handler is invoked, you can be confident that all required values have been successfully parsed and validated (if necessary). Golang generics provide a type-safe and ergonomic experience, with all type casting handled internally.
 
 ## Installation
 
@@ -15,6 +19,8 @@ go get github.com/nktknshn/go-ergo-handler
 ## Example
 
 ```go
+
+import geh "github.com/nktknshn/go-ergo-handler"
 
 type payloadType struct {
 	Title string `json:"title"`
@@ -49,7 +55,7 @@ func (p paramBookIDType) Validate() error {
 }
 
 var (
-	paramBookID    = geh.RouterParamWithParser[paramBookIDType]("book_id", errors.New("book_id is required"))
+	paramBookID    = geh.RouterParamWithParser[paramBookIDType]("book_id")
 	payloadBook    = geh.Payload[payloadType]()
 	paramUnpublish = geh.QueryParamMaybe("unpublish", geh.IgnoreContext(strconv.ParseBool))
 )
@@ -80,27 +86,23 @@ func makeHttpHandler(useCase interface {
 
 ## Usage
 
-example project 
+Example project utilizing the library for a handlers layer.
+
 https://github.com/nktknshn/go-ergo-handler-example
+
 https://github.com/nktknshn/go-ergo-handler-example/tree/master/internal/adapters/http_adapter/handlers
 
-query param
-https://github.com/nktknshn/go-ergo-handler-example/blob/master/internal/adapters/http_adapter/handlers/get_books/query_param_cursor.go
+- [query param](https://github.com/nktknshn/go-ergo-handler-example/blob/master/internal/adapters/http_adapter/handlers/get_books/query_param_cursor.go)
 
-router param
-https://github.com/nktknshn/go-ergo-handler-example/blob/master/internal/adapters/http_adapter/handlers/get_book/get_book.go
+- [router param](https://github.com/nktknshn/go-ergo-handler-example/blob/master/internal/adapters/http_adapter/handlers/get_book/get_book.go)
 
-payload
-https://github.com/nktknshn/go-ergo-handler-example/blob/master/internal/adapters/http_adapter/handlers/create_book/create_book.go
+- [payload](https://github.com/nktknshn/go-ergo-handler-example/blob/master/internal/adapters/http_adapter/handlers/create_book/create_book.go)
 
-custom http code
-https://github.com/nktknshn/go-ergo-handler-example/blob/master/internal/adapters/http_adapter/handlers/create_favorite_book/create_favorite_book.go
+- [custom http code](https://github.com/nktknshn/go-ergo-handler-example/blob/master/internal/adapters/http_adapter/handlers/create_favorite_book/create_favorite_book.go)
 
-authentication
-https://github.com/nktknshn/go-ergo-handler-example/blob/master/internal/adapters/http_adapter/handlers/handlers_user_auth/user_auth_parser.go
+- [authentication](https://github.com/nktknshn/go-ergo-handler-example/blob/master/internal/adapters/http_adapter/handlers/handlers_user_auth/user_auth_parser.go)
 
-custom parser and authorization
-https://github.com/nktknshn/go-ergo-handler-example/blob/master/internal/adapters/http_adapter/handlers/handler_admin_role_checker/handler_admin_role_checker.go
+- [custom parser and authorization](https://github.com/nktknshn/go-ergo-handler-example/blob/master/internal/adapters/http_adapter/handlers/handler_admin_role_checker/handler_admin_role_checker.go)
 
-custom error handler
-https://github.com/nktknshn/go-ergo-handler-example/blob/master/internal/adapters/http_adapter/handlers/handler_builder/handler_error.go
+- [custom error handler](https://github.com/nktknshn/go-ergo-handler-example/blob/master/internal/adapters/http_adapter/handlers/handler_builder/handler_error.go)
+

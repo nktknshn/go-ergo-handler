@@ -46,14 +46,14 @@ func (b *Builder) WithHandlerResultFunc(f HandleResultFunc) *Builder {
 	return b
 }
 
-// BuildHandler builds a handler that will call the given function after the middlewares.
+// BuildHandler builds a handler that will call the given function after all the parsers succeed.
 func (b *Builder) BuildHandler(f func(h http.ResponseWriter, r *http.Request)) http.Handler {
 	return b.ApplyMiddleware(http.HandlerFunc(f))
 }
 
 // BuildHandlerWrapped builds a handler that is wrapped with result and error handlers.
 // By default, the result will be marshalled to json {"result": result} and the error will be marshalled to json {"error": "error message"}.
-// Default failure HTTP status codes are 400 for request parsing and 500 when handler returns an error.
+// Default failure HTTP status codes are 400 for request parsing and 500 for an error returned by the handler.
 // Success HTTP status code is 200.
 // This can be changed by setting the HandlerErrorFunc and HandlerResultFunc or by returning a ErrorWithHttpStatus/ResponseWithHttpStatus from the handler or parsers.
 func (b *Builder) BuildHandlerWrapped(f func(h http.ResponseWriter, r *http.Request) (any, error)) http.Handler {
