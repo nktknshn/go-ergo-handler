@@ -8,7 +8,7 @@ This library can help you build robust, type-safe HTTP-handlers from reusable mi
 
 ## Concept
 
-You define parsers (basically middleware functions) that extract values from the `http.Request` and place them into the context. Before a handler is invoked, the chain of parsers is executed. If any parser fails, an error is returned, and the handler is not called. This process is similar to Either monad chaining in Functional Programming. By the time the handler is invoked, you can be confident that all required values have been successfully parsed and validated (if necessary). Golang generics provide a type-safe and ergonomic experience, with all type casting handled internally.
+You define parsers (essentially middleware functions) that extract values from the `http.Request` and place them into the context. Before a handler is invoked, the chain of parsers is executed. If any parser fails, an error is returned, and the handler is not called. This process is similar to Either monad chaining in Functional Programming. By the time the handler is invoked, you can be confident that all required values have been successfully parsed and validated (if necessary). Golang generics provide a type-safe and ergonomic experience, with all type casting handled internally.
 
 ## Installation
 
