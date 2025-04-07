@@ -81,6 +81,7 @@ func TryErrorWithHttpStatus(err error) (ErrorWithHttpStatus, bool) {
 	return e, ok
 }
 
+// WrapWithInternalServerError wraps an error with an HTTP status code of 500. If the error is already an ErrorWithHttpStatus, it returns the original error.
 func InternalServerError(err error) error {
 	return WrapWithStatusCode(err, defaultHttpStatusCodeErrInternal)
 }

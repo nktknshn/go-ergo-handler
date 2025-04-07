@@ -33,6 +33,9 @@ type RouterParamType[T any] struct {
 	ErrMissing error
 }
 
+// RouterParam is a parser that parses a required router param from the request.
+// If the router param is missing, it returns ErrRouterParamMissing.
+// If the type implements WithValidation, it will be validated.
 func RouterParam[T any](name string, parser RouteParamParserFunc[T]) *RouterParamType[T] {
 	return &RouterParamType[T]{
 		Name:   name,

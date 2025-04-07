@@ -26,7 +26,7 @@ type AuthParserType[T any, K any] struct {
 	tokenParserFunc tokenParserFunc
 }
 
-// AuthParser represents a parser that parses the token from the request.
+// AuthParser represents a parser that parses a token string from the request.
 // Attaching requires a tokenValidator that will validate the token.
 // If validator returns false, ErrAuthTokenNotFound will be returned.
 // If token is missing, ErrAuthMissingToken will be returned.
@@ -53,14 +53,14 @@ type AttachedAuthParser[T any, K any] struct {
 func (a *AttachedAuthParser[T, K]) ParseRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (context.Context, error) {
 	token, ok, err := a.tokenParserFunc(ctx, r)
 	if err != nil {
-		return ctx, WrapWithStatusCode(err, defaultHttpStatusCodeErrInternal)
+		return ctx, InternalServerError(err)
 	}
 	if !ok {
 		return ctx, WrapWithStatusCode(ErrAuthMissingToken, defaultHttpStatusCodeErrUnauthorized)
 	}
 	data, ok, err := a.tokenValidator.ValidateToken(ctx, token)
 	if err != nil {
-		return ctx, WrapWithStatusCode(err, defaultHttpStatusCodeErrInternal)
+		return ctx, InternalServerError(err)
 	}
 	if !ok {
 		return ctx, WrapWithStatusCode(ErrAuthTokenNotFound, defaultHttpStatusCodeErrUnauthorized)

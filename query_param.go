@@ -31,6 +31,9 @@ type QueryParamType[T any] struct {
 	ErrMissing error
 }
 
+// QueryParam is a parser that parses a required query param from the request.
+// If the query param is missing, it returns ErrQueryParamMissing.
+// If the type implements WithValidation, it will be validated.
 func QueryParam[T any](
 	name string,
 	parser QueryParamParserFunc[T],

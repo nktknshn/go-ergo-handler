@@ -11,7 +11,7 @@ type QueryParamWithParserType[T WithParser[T]] struct {
 	ErrMissing error
 }
 
-// QueryParamWithParser is same as QueryParam but it uses a parser function from the given type.
+// QueryParamWithParser is same as QueryParam but it uses a parser function of the given type.
 func QueryParamWithParser[T WithParser[T]](name string) *QueryParamWithParserType[T] {
 	return &QueryParamWithParserType[T]{
 		Name: name,

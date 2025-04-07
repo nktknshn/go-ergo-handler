@@ -13,6 +13,7 @@ type RouterParamWithParserType[T WithParser[T]] struct {
 	ErrMissing error
 }
 
+// RouterParamWithParser is same as RouterParam but it uses a parser function of the given type.
 func RouterParamWithParser[T WithParser[T]](name string) *RouterParamWithParserType[T] {
 	return &RouterParamWithParserType[T]{
 		Name: name,

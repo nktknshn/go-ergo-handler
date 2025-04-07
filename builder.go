@@ -34,13 +34,13 @@ func (b *Builder) AddParser(parser ValueParser) {
 	b.middlewares = append(b.middlewares, ValueParserToMiddleware(parser, b.handlerErrorFunc))
 }
 
-// WithHandlerErrorFunc sets a function that will be called when an error is returned by some of the middlewares
+// WithHandlerErrorFunc sets a function that will be called when an error is returned by some of the parsers
 func (b *Builder) WithHandlerErrorFunc(f HandleErrorFunc) *Builder {
 	b.handlerErrorFunc = f
 	return b
 }
 
-// WithHandlerResultFunc sets a function that will be called when a result is returned by some of the middlewares
+// WithHandlerResultFunc sets a function that will be called when a result is returned by some of the parsers
 func (b *Builder) WithHandlerResultFunc(f HandleResultFunc) *Builder {
 	b.handlerResultFunc = f
 	return b
@@ -56,7 +56,6 @@ func (b *Builder) BuildHandler(f func(h http.ResponseWriter, r *http.Request)) h
 // Default failure HTTP status codes are 400 for request parsing and 500 when handler returns an error.
 // Success HTTP status code is 200.
 // This can be changed by setting the HandlerErrorFunc and HandlerResultFunc or by returning a ErrorWithHttpStatus/ResponseWithHttpStatus from the handler or parsers.
-// Errors returned by the handler are wrapped with InternalServerError.
 func (b *Builder) BuildHandlerWrapped(f func(h http.ResponseWriter, r *http.Request) (any, error)) http.Handler {
 	wrapped := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		result, err := f(w, r)

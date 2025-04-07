@@ -25,6 +25,8 @@ type PayloadParserType[T any] struct {
 	ParserErr error
 }
 
+// Payload is a parser that parses the payload from the request.
+// If payload type implements WithValidation, it will be validated.
 func Payload[T any]() *PayloadParserType[T] {
 	return &PayloadParserType[T]{}
 }
@@ -33,6 +35,12 @@ func (p *PayloadParserType[T]) Attach(builder ParserAdder) *AttachedPayloadParse
 	a := &AttachedPayloadParser[T]{p}
 	builder.AddParser(a)
 	return a
+}
+
+// WithParsingError sets the error to be returned if the payload is not valid json.
+func (p *PayloadParserType[T]) WithParsingError(err error) *PayloadParserType[T] {
+	p.ParserErr = err
+	return p
 }
 
 type AttachedPayloadParser[T any] struct {
