@@ -5,60 +5,53 @@ import (
 	"net/http"
 )
 
-// TODO: rename to tokenValidator
-type tokenValidator[T any, K any] interface {
-	ValidateToken(ctx context.Context, token string) (*T, bool, error)
-}
-
 type AuthParserMaybeType[T any, K any] struct {
-	key         K
-	tokenParser tokenParserFunc
+	key             K
+	tokenParserFunc tokenParserFunc
 }
 
 type tokenParserFunc = func(ctx context.Context, r *http.Request) (string, bool, error)
 
+// AuthParserMaybe is the same as AuthParser but it allows the token to be missing or
+// validator to return false.
 func AuthParserMaybe[T any, K any](key K, tokenParser tokenParserFunc) *AuthParserMaybeType[T, K] {
 	return &AuthParserMaybeType[T, K]{key, tokenParser}
 }
 
-func (a *AuthParserMaybeType[T, K]) Attach(deps tokenValidator[T, K], builder HandlerBuilder) *AttachedAuthParserMaybe[T, K] {
-	attached := &AttachedAuthParserMaybe[T, K]{deps, a.tokenParser, a.key}
+func (a *AuthParserMaybeType[T, K]) Attach(tokenValidator tokenValidator[T], builder ParserAdder) *AttachedAuthParserMaybe[T, K] {
+	attached := &AttachedAuthParserMaybe[T, K]{tokenValidator, a.tokenParserFunc, a.key}
 	builder.AddParser(attached)
 	return attached
 }
 
 type AttachedAuthParserMaybe[T any, K any] struct {
-	auth        tokenValidator[T, K]
-	tokenParser tokenParserFunc
-	key         K
-}
-
-func (a *AttachedAuthParserMaybe[T, K]) GetContextMaybe(ctx context.Context) (*T, bool) {
-	data, ok := ctx.Value(a.key).(*T)
-	if !ok {
-		return nil, false
-	}
-	return data, true
-}
-
-func (a *AttachedAuthParserMaybe[T, K]) GetMaybe(r *http.Request) (*T, bool) {
-	return a.GetContextMaybe(r.Context())
+	auth            tokenValidator[T]
+	tokenParserFunc tokenParserFunc
+	key             K
 }
 
 func (a *AttachedAuthParserMaybe[T, K]) ParseRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (context.Context, error) {
-	token, ok, err := a.tokenParser(ctx, r)
+	token, ok, err := a.tokenParserFunc(ctx, r)
 	if err != nil {
-		return ctx, WrapError(err, defaultHttpStatusCodeErrInternal)
+		return ctx, InternalServerError(err)
 	}
 	if !ok {
 		return ctx, nil
 	}
 	data, ok, err := a.auth.ValidateToken(ctx, token)
 	if err != nil {
-		return ctx, WrapError(err, defaultHttpStatusCodeErrInternal)
+		return ctx, InternalServerError(err)
 	}
 	if !ok {
 		return ctx, nil
 	}
 	return context.WithValue(ctx, a.key, data), nil
+}
+
+func (a *AttachedAuthParserMaybe[T, K]) GetContextMaybe(ctx context.Context) (*T, bool) {
+	return GetFromContextMaybe[*T](ctx, a.key)
+}
+
+func (a *AttachedAuthParserMaybe[T, K]) GetMaybe(r *http.Request) (*T, bool) {
+	return a.GetContextMaybe(r.Context())
 }

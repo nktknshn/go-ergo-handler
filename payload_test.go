@@ -46,3 +46,18 @@ func TestPayloadWithValidation(t *testing.T) {
 	require.Equal(t, `{"error":"some_key is required"}`, w.Body.String())
 	require.Equal(t, http.StatusBadRequest, w.Code)
 }
+
+func TestPayloadWithCustomParserError(t *testing.T) {
+	payload := goergohandler.Payload[testPayload]()
+	payload.ParserErr = errors.New("custom parser error")
+	builder := goergohandler.New()
+	attachedPayload := payload.Attach(builder)
+
+	_, err := attachedPayload.ParseRequest(
+		t.Context(),
+		httptest.NewRecorder(),
+		httptest.NewRequest("POST", "/", strings.NewReader(`{1}`)),
+	)
+	require.Error(t, err)
+	require.Equal(t, "custom parser error", err.Error())
+}

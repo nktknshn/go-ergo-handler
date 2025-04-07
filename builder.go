@@ -7,12 +7,15 @@ import (
 	"net/http"
 )
 
-type MiddlewareFunc func(http.Handler) http.Handler
+type MiddlewareFunc = func(http.Handler) http.Handler
 
-type HandlerBuilder interface {
-	AddParser(parser ValueParser)
-}
+// HandleErrorFunc is a function that will be called when the handler returns an error
+type HandleErrorFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, err error)
 
+// HandleResultFunc is a function that will be called when the handler returns a result
+type HandleResultFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, result any)
+
+// Builder is a builder for the handler.
 type Builder struct {
 	parsers           []ValueParser
 	middlewares       []MiddlewareFunc
@@ -20,71 +23,12 @@ type Builder struct {
 	handlerResultFunc HandleResultFunc
 }
 
-type errorResponse struct {
-	Error string `json:"error"`
-}
-
-type successResponse struct {
-	Success bool `json:"success"`
-	Result  any  `json:"result"`
-}
-
-// by default, the error will be marshalled to json {"error": "error message"}
-var DefaultHandlerErrorFunc HandleErrorFunc = func(_ context.Context, w http.ResponseWriter, _ *http.Request, err error) {
-	w.Header().Set("Content-Type", "application/json")
-
-	switch err := err.(type) {
-	case ErrorWithHttpStatus:
-		err.SetHeaders(w)
-	default:
-		w.WriteHeader(defaultHttpStatusCodeErrInternal)
-	}
-
-	bs, err := json.Marshal(errorResponse{Error: err.Error()})
-	if err != nil {
-		slog.Error("error marshalling json", "error", err)
-		return
-	}
-	_, err = w.Write(bs)
-	if err != nil {
-		slog.Error("error sending response", "error", err)
-		return
-	}
-}
-
-// by default, the result will be marshalled to json {"success": true, "result": result}
-var DefaultHandlerResultFunc HandleResultFunc = func(_ context.Context, w http.ResponseWriter, _ *http.Request, result any) {
-	resultData := result
-	w.Header().Set("Content-Type", "application/json")
-
-	switch result := result.(type) {
-	case ResponseWithHttpStatus:
-		result.SetHeaders(w)
-		resultData = result.Response
-	default:
-		w.WriteHeader(http.StatusOK)
-	}
-
-	if resultData == nil {
-		resultData = struct{}{}
-	}
-
-	bs, err := json.Marshal(successResponse{Success: true, Result: resultData})
-	if err != nil {
-		slog.Error("error marshalling json", "error", err)
-		return
-	}
-	_, err = w.Write(bs)
-	if err != nil {
-		slog.Error("error sending response", "error", err)
-		return
-	}
-}
-
 func New() *Builder {
 	return &Builder{}
 }
 
+// AddParser adds a parser to the builder.
+// The handlerErrorFunc linked to the builder will be used to handle the error returned by the parser.
 func (b *Builder) AddParser(parser ValueParser) {
 	b.parsers = append(b.parsers, parser)
 	b.middlewares = append(b.middlewares, ValueParserToMiddleware(parser, b.handlerErrorFunc))
@@ -108,22 +52,22 @@ func (b *Builder) BuildHandler(f func(h http.ResponseWriter, r *http.Request)) h
 }
 
 // BuildHandlerWrapped builds a handler that is wrapped with result and error handlers.
-// By default, the result will be marshalled to json {"success": true, "result": result} and the error will be marshalled to json {"error": "error message"}.
+// By default, the result will be marshalled to json {"result": result} and the error will be marshalled to json {"error": "error message"}.
 // Default failure HTTP status codes are 400 for request parsing and 500 when handler returns an error.
 // Success HTTP status code is 200.
 // This can be changed by setting the HandlerErrorFunc and HandlerResultFunc or by returning a ErrorWithHttpStatus/ResponseWithHttpStatus from the handler or parsers.
+// Errors returned by the handler are wrapped with InternalServerError.
 func (b *Builder) BuildHandlerWrapped(f func(h http.ResponseWriter, r *http.Request) (any, error)) http.Handler {
-
 	wrapped := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		result, err := f(w, r)
 
 		if err != nil && b.handlerErrorFunc != nil {
-			b.handlerErrorFunc(r.Context(), w, r, err)
+			b.handlerErrorFunc(r.Context(), w, r, InternalServerError(err))
 			return
 		}
 
 		if err != nil {
-			DefaultHandlerErrorFunc(r.Context(), w, r, err)
+			DefaultHandlerErrorFunc(r.Context(), w, r, InternalServerError(err))
 			return
 		}
 
@@ -138,12 +82,7 @@ func (b *Builder) BuildHandlerWrapped(f func(h http.ResponseWriter, r *http.Requ
 	return b.ApplyMiddleware(wrapped)
 }
 
-// HandleErrorFunc is a function that will be called when the handler returns an error
-type HandleErrorFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, err error)
-
-// HandleResultFunc is a function that will be called when the handler returns a result
-type HandleResultFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, result any)
-
+// ApplyMiddleware applies the middlewares to the handler
 func (b *Builder) ApplyMiddleware(hh http.Handler) http.Handler {
 	for i := len(b.middlewares) - 1; i >= 0; i-- {
 		hh = b.middlewares[i](hh)
@@ -151,19 +90,97 @@ func (b *Builder) ApplyMiddleware(hh http.Handler) http.Handler {
 	return hh
 }
 
+// ValueParserToMiddleware converts a ValueParser to a MiddlewareFunc. If ParseRequest returns an error, the error will be handled by the handlerErrorFunc or DefaultHandlerErrorFunc if the handlerErrorFunc is nil.
 func ValueParserToMiddleware(parser ValueParser, handlerErrorFunc HandleErrorFunc) MiddlewareFunc {
-	return MiddlewareFunc(func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx, err := parser.ParseRequest(r.Context(), w, r)
+			newctx, err := parser.ParseRequest(r.Context(), w, r)
 			if err != nil {
 				if handlerErrorFunc != nil {
-					handlerErrorFunc(ctx, w, r, err)
+					handlerErrorFunc(newctx, w, r, err)
 					return
 				}
-				DefaultHandlerErrorFunc(ctx, w, r, err)
+				DefaultHandlerErrorFunc(newctx, w, r, err)
 				return
 			}
-			next.ServeHTTP(w, r.WithContext(ctx))
+			next.ServeHTTP(w, r.WithContext(newctx))
 		})
-	})
+	}
+}
+
+// errorResponse is the default error response to be marshalled to json {"error": "error message"}.
+type errorResponse struct {
+	Error string `json:"error"`
+}
+
+// successResponse is the default success response to be marshalled to json {"result": result}.
+type successResponse struct {
+	Result any `json:"result"`
+}
+
+// By default, the error will be marshalled to json {"error": "error message"}.
+// Default http status code is 500. Return ErrorWithHttpStatus to customize the http status code.
+// Implement ErrorWithResponseWriter or ErrorWithHeaderWriter for your errors to customize the response body or just headers.
+// The method can be overridden by setting WithHandlerErrorFunc to builder before attaching any parsers.
+var DefaultHandlerErrorFunc HandleErrorFunc = func(_ context.Context, w http.ResponseWriter, _ *http.Request, err error) {
+
+	switch err := err.(type) {
+	case ErrorWithResponseWriter:
+		err.WriteResponse(w)
+		return
+	case ErrorWithHeaderWriter:
+		w.Header().Set("Content-Type", "application/json")
+		err.WriteHeader(w)
+	default:
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(defaultHttpStatusCodeErrInternal)
+	}
+
+	bs, err := json.Marshal(errorResponse{Error: err.Error()})
+	if err != nil {
+		slog.Error("error marshalling json", "error", err)
+		return
+	}
+	_, err = w.Write(bs)
+	if err != nil {
+		slog.Error("error sending response", "error", err)
+		return
+	}
+}
+
+// By default, the result will be marshalled to json {"result": result}.
+// Status code is 200. Return ResponseWithHttpStatus to customize the http status code.
+// Implement ResponseWithResponseWriter for your results to customize the response body and headers.
+// Nil result will be marshalled to json {"result": {}}.
+// The method can be overridden by setting WithHandlerResultFunc.
+var DefaultHandlerResultFunc HandleResultFunc = func(_ context.Context, w http.ResponseWriter, _ *http.Request, result any) {
+	resultData := result
+
+	switch result := result.(type) {
+	case ResponseWithResponseWriter:
+		result.WriteResponse(w)
+		return
+	case ResponseWithHttpStatus:
+		w.Header().Set("Content-Type", "application/json")
+		result.WriteHeaders(w)
+		resultData = result.Response
+	default:
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+	}
+
+	if resultData == nil {
+		resultData = struct{}{}
+	}
+
+	bs, err := json.Marshal(successResponse{Result: resultData})
+	if err != nil {
+		slog.Error("error marshalling json", "error", err)
+		return
+	}
+	_, err = w.Write(bs)
+	if err != nil {
+		slog.Error("error sending response", "error", err)
+		return
+	}
 }

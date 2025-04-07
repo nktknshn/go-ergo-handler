@@ -7,44 +7,51 @@ import (
 	"net/http"
 )
 
+const (
+	defaultHttpStatusCodeErrPayloadParsing    = http.StatusBadRequest
+	defaultHttpStatusCodeErrPayloadValidation = http.StatusBadRequest
+)
+
 type payloadKeyType string
 
 var (
-	payloadKey            payloadKeyType = "payload"
-	ErrPayloadParserError error          = errors.New("payload parser error")
+	payloadKey        payloadKeyType = "payload"
+	ErrPayloadParsing error          = errors.New("error parsing payload")
 )
 
 type PayloadParserType[T any] struct {
-	Payload   T
+	// override the default parsing error
+	// TODO: implement constructor for this
 	ParserErr error
 }
 
-func (p *PayloadParserType[T]) Attach(builder HandlerBuilder) *AttachedPayloadParser[T] {
+func Payload[T any]() *PayloadParserType[T] {
+	return &PayloadParserType[T]{}
+}
+
+func (p *PayloadParserType[T]) Attach(builder ParserAdder) *AttachedPayloadParser[T] {
 	a := &AttachedPayloadParser[T]{p}
 	builder.AddParser(a)
 	return a
 }
 
 type AttachedPayloadParser[T any] struct {
-	p *PayloadParserType[T]
+	pp *PayloadParserType[T]
 }
 
 func (p *AttachedPayloadParser[T]) ParseRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (context.Context, error) {
 	var pl T
 	err := json.NewDecoder(r.Body).Decode(&pl)
 	if err != nil {
-		parseErr := ErrPayloadParserError
-		if p.p.ParserErr != nil {
-			parseErr = p.p.ParserErr
+		parseErr := ErrPayloadParsing
+		if p.pp.ParserErr != nil {
+			parseErr = p.pp.ParserErr
 		}
-		return ctx, WrapError(parseErr, defaultHttpStatusCodeErrParsing)
+		return ctx, WrapWithStatusCode(parseErr, defaultHttpStatusCodeErrPayloadParsing)
 	}
-	validatable, ok := any(pl).(WithValidation)
-	if ok {
-		err = validatable.Validate()
-		if err != nil {
-			return ctx, WrapError(err, defaultHttpStatusCodeErrParsing)
-		}
+	err = ValidateWithValidation(pl)
+	if err != nil {
+		return ctx, WrapWithStatusCode(err, defaultHttpStatusCodeErrPayloadValidation)
 	}
 	return context.WithValue(ctx, payloadKey, pl), nil
 }
@@ -54,13 +61,5 @@ func (p *AttachedPayloadParser[T]) Get(r *http.Request) T {
 }
 
 func (p *AttachedPayloadParser[T]) GetContext(ctx context.Context) T {
-	v := ctx.Value(payloadKey)
-	if v == nil {
-		panic(builderMissingKey)
-	}
-	return v.(T)
-}
-
-func Payload[T any]() *PayloadParserType[T] {
-	return &PayloadParserType[T]{}
+	return GetFromContext[T](ctx, payloadKey)
 }

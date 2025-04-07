@@ -8,61 +8,70 @@ import (
 
 const (
 	defaultHttpStatusCodeErrUnauthorized = http.StatusUnauthorized
-	defaultHttpStatusCodeErrInternal     = http.StatusInternalServerError
 )
 
 var (
-	ErrNoToken = errors.New("no token")
-	ErrNoUser  = errors.New("no user")
+	// Returned when the token is missing from the request.
+	ErrAuthMissingToken = errors.New("missing token")
+	// Returned when token validator returned false.
+	ErrAuthTokenNotFound = errors.New("token not found")
 )
 
+type tokenValidator[T any] interface {
+	ValidateToken(ctx context.Context, token string) (*T, bool, error)
+}
+
 type AuthParserType[T any, K any] struct {
-	key         K
-	tokenParser tokenParserFunc
+	key             K
+	tokenParserFunc tokenParserFunc
 }
 
+// AuthParser represents a parser that parses the token from the request.
+// Attaching requires a tokenValidator that will validate the token.
+// If validator returns false, ErrAuthTokenNotFound will be returned.
+// If token is missing, ErrAuthMissingToken will be returned.
+// If validator returns error, it will be returned wrapped with defaultHttpStatusCodeErrInternal http status code.
+// On success the data returned by the validator will be set to the context with the key.
+// Use WithHandlerErrorFunc to customize the error handling.
 func AuthParser[T any, K any](key K, tokenParser tokenParserFunc) *AuthParserType[T, K] {
-	return &AuthParserType[T, K]{key, tokenParser}
+	return &AuthParserType[T, K]{key: key, tokenParserFunc: tokenParser}
 }
 
-func (a *AuthParserType[T, K]) Attach(deps tokenValidator[T, K], builder HandlerBuilder) *AttachedAuthParser[T, K] {
-	attached := &AttachedAuthParser[T, K]{deps, a.tokenParser, a.key}
+func (a *AuthParserType[T, K]) Attach(tokenValidator tokenValidator[T], builder ParserAdder) *AttachedAuthParser[T, K] {
+	attached := &AttachedAuthParser[T, K]{tokenValidator, a.tokenParserFunc, a.key}
 	builder.AddParser(attached)
 	return attached
 }
 
 type AttachedAuthParser[T any, K any] struct {
-	auth        tokenValidator[T, K]
-	tokenParser tokenParserFunc
-	key         K
+	tokenValidator  tokenValidator[T]
+	tokenParserFunc tokenParserFunc
+	key             K
+}
+
+// ParseRequest parses the request and returns the context and error.
+func (a *AttachedAuthParser[T, K]) ParseRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (context.Context, error) {
+	token, ok, err := a.tokenParserFunc(ctx, r)
+	if err != nil {
+		return ctx, WrapWithStatusCode(err, defaultHttpStatusCodeErrInternal)
+	}
+	if !ok {
+		return ctx, WrapWithStatusCode(ErrAuthMissingToken, defaultHttpStatusCodeErrUnauthorized)
+	}
+	data, ok, err := a.tokenValidator.ValidateToken(ctx, token)
+	if err != nil {
+		return ctx, WrapWithStatusCode(err, defaultHttpStatusCodeErrInternal)
+	}
+	if !ok {
+		return ctx, WrapWithStatusCode(ErrAuthTokenNotFound, defaultHttpStatusCodeErrUnauthorized)
+	}
+	return context.WithValue(ctx, a.key, data), nil
 }
 
 func (a *AttachedAuthParser[T, K]) GetContext(ctx context.Context) *T {
-	data, ok := ctx.Value(a.key).(*T)
-	if !ok {
-		return nil
-	}
-	return data
+	return GetFromContext[*T](ctx, a.key)
 }
 
 func (a *AttachedAuthParser[T, K]) Get(r *http.Request) *T {
 	return a.GetContext(r.Context())
-}
-
-func (a *AttachedAuthParser[T, K]) ParseRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (context.Context, error) {
-	token, ok, err := a.tokenParser(ctx, r)
-	if err != nil {
-		return ctx, WrapError(err, defaultHttpStatusCodeErrInternal)
-	}
-	if !ok {
-		return ctx, WrapError(ErrNoToken, defaultHttpStatusCodeErrUnauthorized)
-	}
-	data, ok, err := a.auth.ValidateToken(ctx, token)
-	if err != nil {
-		return ctx, WrapError(err, defaultHttpStatusCodeErrInternal)
-	}
-	if !ok {
-		return ctx, WrapError(ErrNoUser, defaultHttpStatusCodeErrUnauthorized)
-	}
-	return context.WithValue(ctx, a.key, data), nil
 }

@@ -2,6 +2,14 @@ package goergohandler
 
 import "net/http"
 
+type ResponseWithResponseWriter interface {
+	WriteResponse(w http.ResponseWriter)
+}
+
+type ResponseWithHeaderWriter interface {
+	WriteHeaders(w http.ResponseWriter)
+}
+
 type ResponseWithHttpStatus struct {
 	HttpStatusCode int
 	Response       any
@@ -15,7 +23,7 @@ func NewResponseWithHttpStatus(httpStatusCode int, response any) ResponseWithHtt
 }
 
 // SetHeader sets the header for the response
-func (r *ResponseWithHttpStatus) SetHeaders(w http.ResponseWriter) {
+func (r *ResponseWithHttpStatus) WriteHeaders(w http.ResponseWriter) {
 	if r.HttpStatusCode != 0 {
 		w.WriteHeader(r.HttpStatusCode)
 	}

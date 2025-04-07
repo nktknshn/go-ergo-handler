@@ -46,19 +46,20 @@ func (p paramBookIDType) Validate() error {
 }
 
 var (
-	paramBookID    = geh.RouterParamWithParser[paramBookIDType]("book_id", errors.New("book_id is required"))
-	payloadBook    = geh.Payload[payloadType]()
+	paramBookID    = geh.RouterParamWithParser[paramBookIDType]("book_id")
 	paramUnpublish = geh.QueryParamMaybe("unpublish", geh.IgnoreContext(strconv.ParseBool))
+	payloadBook    = geh.Payload[payloadType]()
 )
 
 func makeHttpHandler(useCase interface {
 	UpdateBook(ctx context.Context, bookID int, title string, price int, unpublish bool) error
 }) http.Handler {
+
 	var (
 		builder   = geh.New()
 		bookID    = paramBookID.Attach(builder)
-		payload   = payloadBook.Attach(builder)
 		unpublish = paramUnpublish.Attach(builder)
+		payload   = payloadBook.Attach(builder)
 	)
 
 	return builder.BuildHandlerWrapped(func(w http.ResponseWriter, r *http.Request) (any, error) {
@@ -92,6 +93,25 @@ func main() {
 
 	router.ServeHTTP(w, r)
 
+	/*
+		bookID: 1 title: The Great Gatsby price: 100 unpublish: false
+		200
+		{"result":{}}
+	*/
+
 	fmt.Println(w.Code)
 	fmt.Println(w.Body.String())
+
+	w = httptest.NewRecorder()
+	r = httptest.NewRequest("PUT", "/books/1", strings.NewReader(`{"price": 100}`))
+	router.ServeHTTP(w, r)
+
+	/*
+		400
+		{"error":"empty book title"}
+	*/
+
+	fmt.Println(w.Code)
+	fmt.Println(w.Body.String())
+
 }

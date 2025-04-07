@@ -15,7 +15,7 @@ import (
 func TestQueryParam_ParseRequest(t *testing.T) {
 	queryParam := goergohandler.QueryParam("some_key", func(ctx context.Context, v string) (string, error) {
 		return v, nil
-	}, errors.New("some_key is required"))
+	})
 
 	builder := goergohandler.New()
 	attachedQueryParam := queryParam.Attach(builder)
@@ -35,7 +35,7 @@ func TestQueryParam_ParseRequest(t *testing.T) {
 	r = httptest.NewRequest("GET", "/", nil)
 	handler.ServeHTTP(w, r)
 
-	require.Equal(t, w.Body.String(), `{"error":"some_key is required"}`)
+	require.Equal(t, w.Body.String(), `{"error":"required query param is missing: some_key"}`)
 	require.Equal(t, w.Code, http.StatusBadRequest)
 }
 
@@ -52,7 +52,7 @@ func TestQueryParam_ParseRequest_WithValidation(t *testing.T) {
 	queryParam := goergohandler.QueryParam("some_key", func(ctx context.Context, v string) (paramBookIDType, error) {
 		vint, _ := strconv.Atoi(v)
 		return paramBookIDType(vint), nil
-	}, errors.New("some_key is required"))
+	})
 
 	builder := goergohandler.New()
 	attachedQueryParam := queryParam.Attach(builder)

@@ -6,12 +6,14 @@ import (
 	"net/http"
 )
 
-// builderCastError происходит, когда не удалось привести значение из D к нужному типу.
-// Исключительная ситуация, которая не должна происходить.
+const (
+	defaultHttpStatusCodeErrInternal = http.StatusInternalServerError
+)
+
+// builderCastError is thrown if the value in context cannot be casted to the expected value
 var builderCastError = errors.New("failed to cast")
 
-// builderMissingKeyError происходит, когда не удалось получить значение из D по ключу.
-// Исключительная ситуация, которая произойдет, если в Builder не добавлен нужный парсер.
+// builderMissingKeyError is thrown if context is missing a key
 var builderMissingKey = errors.New("missing key")
 
 func newBuilderCastError(msg string) error {
@@ -22,6 +24,16 @@ func newBuilderMissingKeyError(msg string) error {
 	return fmt.Errorf("%w: %s", builderMissingKey, msg)
 }
 
+// ErrorWithResponseWriter is an error that can write the response themself.
+type ErrorWithResponseWriter interface {
+	WriteResponse(w http.ResponseWriter)
+}
+
+type ErrorWithHeaderWriter interface {
+	WriteHeader(w http.ResponseWriter)
+}
+
+// ErrorWithHttpStatus is an error that has an HTTP status code.
 type ErrorWithHttpStatus struct {
 	HttpStatusCode int
 	Err            error
@@ -35,21 +47,24 @@ func (e ErrorWithHttpStatus) Unwrap() error {
 	return e.Err
 }
 
-func (e ErrorWithHttpStatus) SetHeaders(w http.ResponseWriter) {
+func (e ErrorWithHttpStatus) WriteHeader(w http.ResponseWriter) {
 	if e.HttpStatusCode != 0 {
 		w.WriteHeader(e.HttpStatusCode)
 	}
 }
 
+// NewError creates a new ErrorWithHttpStatus with the given status code and wrapped error.
 func NewError(status int, err error) ErrorWithHttpStatus {
 	return ErrorWithHttpStatus{HttpStatusCode: status, Err: err}
 }
 
+// NewErrorStr creates a new ErrorWithHttpStatus with the given status code and wrapped error string.
 func NewErrorStr(status int, errS string) ErrorWithHttpStatus {
 	return ErrorWithHttpStatus{HttpStatusCode: status, Err: errors.New(errS)}
 }
 
-func WrapError(err error, code int) error {
+// WrapWithStatusCode wraps an error with an HTTP status code. If the error is already an ErrorWithHttpStatus, it returns the original error.
+func WrapWithStatusCode(err error, code int) error {
 	if err == nil {
 		return err
 	}
@@ -60,7 +75,12 @@ func WrapError(err error, code int) error {
 	return NewError(code, err)
 }
 
+// TryErrorWithHttpStatus tries to cast an error to an ErrorWithHttpStatus.
 func TryErrorWithHttpStatus(err error) (ErrorWithHttpStatus, bool) {
 	e, ok := err.(ErrorWithHttpStatus)
 	return e, ok
+}
+
+func InternalServerError(err error) error {
+	return WrapWithStatusCode(err, defaultHttpStatusCodeErrInternal)
 }

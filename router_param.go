@@ -9,6 +9,20 @@ import (
 	"github.com/gorilla/mux"
 )
 
+const (
+	defaultHttpStatusCodeErrRouterParamParsing    = http.StatusBadRequest
+	defaultHttpStatusCodeErrRouterParamMissing    = http.StatusBadRequest
+	defaultHttpStatusCodeErrRouterParamValidation = http.StatusBadRequest
+)
+
+var (
+	ErrRouterParamMissing = errors.New("required router param is missing")
+)
+
+func newRouterParamMissingError(paramName string) error {
+	return fmt.Errorf("%w: %s", ErrRouterParamMissing, paramName)
+}
+
 type routerParamKeyType string
 
 type RouteParamParserFunc[T any] func(ctx context.Context, v string) (T, error)
@@ -16,7 +30,6 @@ type RouteParamParserFunc[T any] func(ctx context.Context, v string) (T, error)
 type RouterParamType[T any] struct {
 	Name       string
 	Parser     RouteParamParserFunc[T]
-	ErrParsing error
 	ErrMissing error
 }
 
@@ -27,13 +40,13 @@ func RouterParam[T any](name string, parser RouteParamParserFunc[T]) *RouterPara
 	}
 }
 
-var ErrorRouterParamMissing = errors.New("router param missing")
-
-func newRouterParamMissingError(paramName string) error {
-	return fmt.Errorf("%w: %s", ErrorRouterParamMissing, paramName)
+// WithMissingError sets the error to be returned if the router param is missing.
+func (rp *RouterParamType[T]) WithMissingError(err error) *RouterParamType[T] {
+	rp.ErrMissing = err
+	return rp
 }
 
-func (rp *RouterParamType[T]) Attach(builder HandlerBuilder) *AttachedRouterParam[T] {
+func (rp *RouterParamType[T]) Attach(builder ParserAdder) *AttachedRouterParam[T] {
 	a := &AttachedRouterParam[T]{rp}
 	builder.AddParser(a)
 	return a
@@ -47,19 +60,19 @@ func (p *AttachedRouterParam[T]) ParseRequest(ctx context.Context, w http.Respon
 	vars := mux.Vars(r)
 	v, ok := vars[p.rp.Name]
 	if !ok {
-		err := newRouterParamMissingError(p.rp.Name)
-		return ctx, WrapError(err, defaultHttpStatusCodeErrParsing)
+		err := p.rp.ErrMissing
+		if err == nil {
+			err = newRouterParamMissingError(p.rp.Name)
+		}
+		return ctx, WrapWithStatusCode(err, defaultHttpStatusCodeErrRouterParamMissing)
 	}
 	vt, err := p.rp.Parser(ctx, v)
 	if err != nil {
-		return ctx, WrapError(err, defaultHttpStatusCodeErrParsing)
+		return ctx, WrapWithStatusCode(err, defaultHttpStatusCodeErrRouterParamParsing)
 	}
-	validatable, ok := any(vt).(WithValidation)
-	if ok {
-		err = validatable.Validate()
-		if err != nil {
-			return ctx, WrapError(err, defaultHttpStatusCodeErrParsing)
-		}
+	err = ValidateWithValidation(vt)
+	if err != nil {
+		return ctx, WrapWithStatusCode(err, defaultHttpStatusCodeErrRouterParamValidation)
 	}
 	return context.WithValue(ctx, routerParamKeyType(p.rp.Name), vt), nil
 }
@@ -69,13 +82,5 @@ func (p *AttachedRouterParam[T]) Get(r *http.Request) T {
 }
 
 func (p *AttachedRouterParam[T]) GetContext(ctx context.Context) T {
-	v := ctx.Value(routerParamKeyType(p.rp.Name))
-	if v == nil {
-		panic(builderMissingKey)
-	}
-	casted, ok := v.(T)
-	if !ok {
-		panic(builderCastError)
-	}
-	return casted
+	return GetFromContext[T](ctx, routerParamKeyType(p.rp.Name))
 }

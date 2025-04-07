@@ -2,6 +2,7 @@ package goergohandler
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -12,14 +13,18 @@ type RouterParamWithParserType[T WithParser[T]] struct {
 	ErrMissing error
 }
 
-func RouterParamWithParser[T WithParser[T]](name string, errMissing error) *RouterParamWithParserType[T] {
+func RouterParamWithParser[T WithParser[T]](name string) *RouterParamWithParserType[T] {
 	return &RouterParamWithParserType[T]{
-		Name:       name,
-		ErrMissing: errMissing,
+		Name: name,
 	}
 }
 
-func (rp *RouterParamWithParserType[T]) Attach(builder HandlerBuilder) *AttachedRouterParamWithParser[T] {
+func (rp *RouterParamWithParserType[T]) WithErrMissing(errMissing error) *RouterParamWithParserType[T] {
+	rp.ErrMissing = errMissing
+	return rp
+}
+
+func (rp *RouterParamWithParserType[T]) Attach(builder ParserAdder) *AttachedRouterParamWithParser[T] {
 	a := &AttachedRouterParamWithParser[T]{rp}
 	builder.AddParser(a)
 	return a
@@ -33,19 +38,20 @@ func (p *AttachedRouterParamWithParser[T]) ParseRequest(ctx context.Context, w h
 	vars := mux.Vars(r)
 	v, ok := vars[p.rp.Name]
 	if !ok {
-		return ctx, WrapError(p.rp.ErrMissing, defaultHttpStatusCodeErrParsing)
+		err := p.rp.ErrMissing
+		if err == nil {
+			err = fmt.Errorf("%w: %s", ErrRouterParamMissing, p.rp.Name)
+		}
+		return ctx, WrapWithStatusCode(err, defaultHttpStatusCodeErrRouterParamMissing)
 	}
 	var instance T
 	vt, err := instance.Parse(ctx, v)
 	if err != nil {
-		return ctx, WrapError(err, defaultHttpStatusCodeErrParsing)
+		return ctx, WrapWithStatusCode(err, defaultHttpStatusCodeErrRouterParamParsing)
 	}
-	validatable, ok := any(vt).(WithValidation)
-	if ok {
-		err = validatable.Validate()
-		if err != nil {
-			return ctx, WrapError(err, defaultHttpStatusCodeErrParsing)
-		}
+	err = ValidateWithValidation(vt)
+	if err != nil {
+		return ctx, WrapWithStatusCode(err, defaultHttpStatusCodeErrRouterParamValidation)
 	}
 	return context.WithValue(ctx, routerParamKeyType(p.rp.Name), vt), nil
 }
@@ -55,13 +61,5 @@ func (p *AttachedRouterParamWithParser[T]) Get(r *http.Request) T {
 }
 
 func (p *AttachedRouterParamWithParser[T]) GetContext(ctx context.Context) T {
-	v := ctx.Value(routerParamKeyType(p.rp.Name))
-	if v == nil {
-		panic(builderMissingKey)
-	}
-	casted, ok := v.(T)
-	if !ok {
-		panic(builderCastError)
-	}
-	return casted
+	return GetFromContext[T](ctx, routerParamKeyType(p.rp.Name))
 }

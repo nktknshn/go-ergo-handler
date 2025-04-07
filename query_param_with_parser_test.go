@@ -2,7 +2,6 @@ package goergohandler_test
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -18,7 +17,7 @@ func (p paramBookIDWithParserType) Parse(ctx context.Context, v string) (paramBo
 }
 
 func TestQueryParamWithParser(t *testing.T) {
-	queryParam := goergohandler.QueryParamWithParser[paramBookIDWithParserType]("book_id", errors.New("book_id is required"))
+	queryParam := goergohandler.QueryParamWithParser[paramBookIDWithParserType]("book_id")
 
 	builder := goergohandler.New()
 	attachedQueryParam := queryParam.Attach(builder)

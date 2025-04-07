@@ -31,14 +31,14 @@ func TestBuilder_BuildHandlerWrapped(t *testing.T) {
 			result:       nil,
 			error:        nil,
 			expectedCode: http.StatusOK,
-			expectedBody: `{"success":true,"result":{}}`,
+			expectedBody: `{"result":{}}`,
 		},
 		{
 			name:         "success",
 			result:       map[string]string{"some_key": "some_value"},
 			error:        nil,
 			expectedCode: http.StatusOK,
-			expectedBody: `{"success":true,"result":{"some_key":"some_value"}}`,
+			expectedBody: `{"result":{"some_key":"some_value"}}`,
 		},
 		{
 			name:         "error",
@@ -59,7 +59,7 @@ func TestBuilder_BuildHandlerWrapped(t *testing.T) {
 			result:       geh.NewResponseWithHttpStatus(http.StatusAccepted, map[string]string{"some_key": "some_value"}),
 			error:        nil,
 			expectedCode: http.StatusAccepted,
-			expectedBody: `{"success":true,"result":{"some_key":"some_value"}}`,
+			expectedBody: `{"result":{"some_key":"some_value"}}`,
 		},
 		{
 			name: "custom error handler func",
