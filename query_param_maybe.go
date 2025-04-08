@@ -10,6 +10,7 @@ type QueryParamMaybeParser[T any] = func(ctx context.Context, v string) (T, erro
 type QueryParamMaybeType[T any] struct {
 	Name   string
 	Parser QueryParamMaybeParser[T]
+	// TODO: ErrParsing
 }
 
 // QueryParamMaybe is same as QueryParam but it doesn't return an error if the query param is missing.

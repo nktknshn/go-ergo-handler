@@ -66,8 +66,8 @@ func makeHttpHandler(useCase interface {
 		// all values are parsed and validated at this point
 		bid := bookID.Get(r)
 		pl := payload.Get(r)
-		unpublish := unpublish.GetDefault(r, false)
-		err := useCase.UpdateBook(r.Context(), int(bid), pl.Title, pl.Price, unpublish)
+		unp := unpublish.GetDefault(r, false)
+		err := useCase.UpdateBook(r.Context(), int(bid), pl.Title, pl.Price, unp)
 		if err != nil {
 			return nil, err
 		}

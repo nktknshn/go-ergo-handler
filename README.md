@@ -4,7 +4,8 @@ Ergonomic HTTP handlers builder for Go.
 
 ## About
 
-This library can help you build robust, type-safe HTTP-handlers from reusable middlewares. 
+This library can help you build type-safe HTTP-handlers from reusable middlewares in a 
+concise and declarative way.
 
 ## Concept
 
@@ -42,14 +43,14 @@ type paramBookIDType int
 func (p paramBookIDType) Parse(ctx context.Context, v string) (paramBookIDType, error) {
 	vint, err := strconv.Atoi(v)
 	if err != nil {
-		return 0, errors.New("invalid book id")
+		return 0, errors.New("book_id is not a number")
 	}
 	return paramBookIDType(vint), nil
 }
 
 func (p paramBookIDType) Validate() error {
 	if p <= 0 {
-		return errors.New("invalid book id")
+		return errors.New("book_id is not a positive number")
 	}
 	return nil
 }
@@ -74,8 +75,8 @@ func makeHttpHandler(useCase interface {
 		// all values are parsed and validated at this point
 		bid := bookID.Get(r)
 		pl := payload.Get(r)
-		unpublish := unpublish.GetDefault(r, false)
-		err := useCase.UpdateBook(r.Context(), int(bid), pl.Title, pl.Price, unpublish)
+		unp := unpublish.GetDefault(r, false)
+		err := useCase.UpdateBook(r.Context(), int(bid), pl.Title, pl.Price, unp)
 		if err != nil {
 			return nil, err
 		}
