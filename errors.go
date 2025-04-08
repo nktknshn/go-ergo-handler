@@ -63,25 +63,59 @@ func NewErrorStr(status int, errS string) ErrorWithHttpStatus {
 	return ErrorWithHttpStatus{HttpStatusCode: status, Err: errors.New(errS)}
 }
 
-// WrapWithStatusCode wraps an error with an HTTP status code. If the error is already an ErrorWithHttpStatus, it returns the original error.
+// WrapWithStatusCode wraps an error with an HTTP status code. If the error is already implementing the interface, it returns the original error.
 func WrapWithStatusCode(err error, code int) error {
 	if err == nil {
 		return err
 	}
-	_, ok := err.(ErrorWithHttpStatus)
-	if ok {
+	if IsWrappedError(err) {
 		return err
 	}
 	return NewError(code, err)
 }
 
-// TryErrorWithHttpStatus tries to cast an error to an ErrorWithHttpStatus.
-func TryErrorWithHttpStatus(err error) (ErrorWithHttpStatus, bool) {
-	e, ok := err.(ErrorWithHttpStatus)
-	return e, ok
+type internalServerError struct {
+	msg string
+	err error
 }
 
-// WrapWithInternalServerError wraps an error with an HTTP status code of 500. If the error is already an ErrorWithHttpStatus, it returns the original error.
+func (e internalServerError) Error() string {
+	return e.err.Error()
+}
+
+func (e internalServerError) WriteResponse(w http.ResponseWriter) {
+	w.WriteHeader(defaultHttpStatusCodeErrInternal)
+	w.Write([]byte(e.msg))
+}
+
+func (e internalServerError) Unwrap() error {
+	return e.err
+}
+
+// IsWrappedError checks if the error is already wrapped with ErrorWithHeaderWriter or ErrorWithResponseWriter.
+func IsWrappedError(err error) bool {
+	switch err.(type) {
+	case ErrorWithHeaderWriter:
+		return true
+	case ErrorWithResponseWriter:
+		return true
+	}
+	return false
+}
+
+// InternalServerError creates an error that does not expose the original error to the client
+// while wrapping the original error.
 func InternalServerError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if IsWrappedError(err) {
+		return err
+	}
+	return internalServerError{err: err, msg: "internal server error"}
+}
+
+// InternalServerErrorExpose creates an error that exposes the original error to the client.
+func InternalServerErrorExpose(err error) error {
 	return WrapWithStatusCode(err, defaultHttpStatusCodeErrInternal)
 }
