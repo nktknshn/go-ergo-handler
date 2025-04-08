@@ -9,7 +9,14 @@ concise and declarative way.
 
 ## Concept
 
-You define parsers (essentially middleware functions) that extract values from `http.Request` and place them into the context. Before a handler is invoked, the chain of parsers is executed. If any parser fails, an error is returned, and the handler is not called. This process is similar to Either monad chaining in Functional Programming. By the time the handler is invoked, you can be confident that all required values have been successfully parsed and validated (if necessary). Golang generics provide a type-safe and ergonomic experience, with all type casting handled internally.
+You define parsers (essentially middleware functions) that extract values from `http.Request` 
+and place them into the context. Attaching a parser provides a typed interface for retrieving 
+these values from the context, ensuring that values are not accessed without the required parser 
+being attached. Before a handler is invoked, the chain of parsers is executed. If any parser 
+fails, an error is returned, and the handler is not called. This process is similar to Either 
+monad chaining in Functional Programming. By the time the handler is invoked, you can be 
+confident that all required values have been successfully parsed and validated (if necessary). 
+Go generics provide a type-safe and ergonomic experience, with all type casting handled internally.
 
 ## Installation
 
