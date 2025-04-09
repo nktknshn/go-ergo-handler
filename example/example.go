@@ -85,7 +85,7 @@ func (u useCase) UpdateBook(ctx context.Context, bookID int, title string, price
 func main() {
 
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest("PUT", "/books/1", strings.NewReader(`{"title": "The Great Gatsby", "price": 100}`))
+	r := httptest.NewRequest("PUT", "/books/1?unpublish=true", strings.NewReader(`{"title": "The Great Gatsby", "price": 100}`))
 
 	handler := makeHttpHandler(useCase{})
 	router := mux.NewRouter()
@@ -94,7 +94,7 @@ func main() {
 	router.ServeHTTP(w, r)
 
 	/*
-		bookID: 1 title: The Great Gatsby price: 100 unpublish: false
+		bookID: 1 title: The Great Gatsby price: 100 unpublish: true
 		200
 		{"result":{}}
 	*/

@@ -52,7 +52,10 @@ func (b *Builder) BuildHandler(f func(h http.ResponseWriter, r *http.Request)) h
 }
 
 // BuildHandlerWrapped builds a handler that is wrapped with result and error handlers.
-// By default, the result will be marshalled to json {"result": result} and the error will be marshalled to json {"error": "error message"}.
+// By default, the result will be marshalled to json {"result": result} and the error
+// will be marshalled to json {"error": "error message"}.
+// Errors that are not wrapped will be wrapped with InternalServerError
+// which renders into 500 status code and plaint text message "Internal Server Error".
 // Default failure HTTP status codes are 400 for request parsing and 500 for an error returned by the handler.
 // Success HTTP status code is 200.
 // This can be changed by setting the HandlerErrorFunc and HandlerResultFunc or by returning a ErrorWithHttpStatus/ResponseWithHttpStatus from the handler or parsers.
