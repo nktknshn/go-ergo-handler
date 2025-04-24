@@ -3,7 +3,9 @@ package goergohandler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
+	"strings"
 )
 
 const (
@@ -23,8 +25,10 @@ type tokenValidator[T any] interface {
 
 type AuthParserType[T any, K any] struct {
 	key             K
-	tokenParserFunc tokenParserFunc
+	tokenParserFunc TokenParserFunc
 }
+
+type TokenParserFunc = func(ctx context.Context, r *http.Request) (string, bool, error)
 
 // AuthParser represents a parser that parses a token string from the request.
 // Attaching requires a tokenValidator that will validate the token.
@@ -33,7 +37,7 @@ type AuthParserType[T any, K any] struct {
 // If validator returns error, it will be returned wrapped with defaultHttpStatusCodeErrInternal http status code.
 // On success the data returned by the validator will be set to the context with the key.
 // Use WithHandlerErrorFunc to customize the error handling.
-func AuthParser[T any, K any](key K, tokenParser tokenParserFunc) *AuthParserType[T, K] {
+func AuthParser[T any, K any](key K, tokenParser TokenParserFunc) *AuthParserType[T, K] {
 	return &AuthParserType[T, K]{key: key, tokenParserFunc: tokenParser}
 }
 
@@ -45,7 +49,7 @@ func (a *AuthParserType[T, K]) Attach(tokenValidator tokenValidator[T], builder 
 
 type AttachedAuthParser[T any, K any] struct {
 	tokenValidator  tokenValidator[T]
-	tokenParserFunc tokenParserFunc
+	tokenParserFunc TokenParserFunc
 	key             K
 }
 
@@ -74,4 +78,22 @@ func (a *AttachedAuthParser[T, K]) GetContext(ctx context.Context) *T {
 
 func (a *AttachedAuthParser[T, K]) Get(r *http.Request) *T {
 	return a.GetContext(r.Context())
+}
+
+var TokenBearerFromHeader TokenParserFunc = func(ctx context.Context, r *http.Request) (string, bool, error) {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		return "", false, nil
+	}
+	// TODO: optimize
+	token := strings.TrimPrefix(authHeader, "Bearer ")
+	if token == "" {
+		return "", false, nil
+	}
+	token = strings.TrimPrefix(token, "bearer ")
+	if token == "" {
+		return "", false, nil
+	}
+	fmt.Println(token)
+	return token, true, nil
 }

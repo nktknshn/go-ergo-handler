@@ -7,14 +7,12 @@ import (
 
 type AuthParserMaybeType[T any, K any] struct {
 	key             K
-	tokenParserFunc tokenParserFunc
+	tokenParserFunc TokenParserFunc
 }
-
-type tokenParserFunc = func(ctx context.Context, r *http.Request) (string, bool, error)
 
 // AuthParserMaybe is the same as AuthParser but it allows the token to be missing or
 // validator to return false.
-func AuthParserMaybe[T any, K any](key K, tokenParser tokenParserFunc) *AuthParserMaybeType[T, K] {
+func AuthParserMaybe[T any, K any](key K, tokenParser TokenParserFunc) *AuthParserMaybeType[T, K] {
 	return &AuthParserMaybeType[T, K]{key, tokenParser}
 }
 
@@ -26,7 +24,7 @@ func (a *AuthParserMaybeType[T, K]) Attach(tokenValidator tokenValidator[T], bui
 
 type AttachedAuthParserMaybe[T any, K any] struct {
 	auth            tokenValidator[T]
-	tokenParserFunc tokenParserFunc
+	tokenParserFunc TokenParserFunc
 	key             K
 }
 

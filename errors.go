@@ -16,6 +16,8 @@ var builderCastError = errors.New("failed to cast")
 // builderMissingKeyError is thrown if context is missing a key
 var builderMissingKey = errors.New("missing key")
 
+var ErrStopPropagation = errors.New("stop")
+
 func newBuilderCastError(msg string) error {
 	return fmt.Errorf("%w: %s", builderCastError, msg)
 }

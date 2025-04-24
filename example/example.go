@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	geh "github.com/nktknshn/go-ergo-handler"
+	ergo "github.com/nktknshn/go-ergo-handler"
 )
 
 type payloadType struct {
@@ -46,9 +46,9 @@ func (p paramBookIDType) Validate() error {
 }
 
 var (
-	paramBookID    = geh.RouterParamWithParser[paramBookIDType]("book_id")
-	paramUnpublish = geh.QueryParamMaybe("unpublish", geh.IgnoreContext(strconv.ParseBool))
-	payloadBook    = geh.Payload[payloadType]()
+	paramBookID    = ergo.RouterParamWithParser[paramBookIDType]("book_id")
+	paramUnpublish = ergo.QueryParamMaybe("unpublish", ergo.IgnoreContext(strconv.ParseBool))
+	payloadBook    = ergo.Payload[payloadType]()
 )
 
 func makeHttpHandler(useCase interface {
@@ -56,7 +56,7 @@ func makeHttpHandler(useCase interface {
 }) http.Handler {
 
 	var (
-		builder   = geh.New()
+		builder   = ergo.New()
 		bookID    = paramBookID.Attach(builder)
 		unpublish = paramUnpublish.Attach(builder)
 		payload   = payloadBook.Attach(builder)
