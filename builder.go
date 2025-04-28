@@ -64,12 +64,14 @@ func (b *Builder) BuildHandlerWrapped(f func(h http.ResponseWriter, r *http.Requ
 		result, err := f(w, r)
 
 		if err != nil && b.handlerErrorFunc != nil {
-			b.handlerErrorFunc(r.Context(), w, r, InternalServerError(err))
+			// b.handlerErrorFunc(r.Context(), w, r, InternalServerError(err))
+			b.handlerErrorFunc(r.Context(), w, r, err)
 			return
 		}
 
 		if err != nil {
-			DefaultHandlerErrorFunc(r.Context(), w, r, InternalServerError(err))
+			// DefaultHandlerErrorFunc(r.Context(), w, r, InternalServerError(err))
+			DefaultHandlerErrorFunc(r.Context(), w, r, err)
 			return
 		}
 
