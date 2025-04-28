@@ -3,7 +3,6 @@ package goergohandler
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 )
@@ -94,6 +93,5 @@ var TokenBearerFromHeader TokenParserFunc = func(ctx context.Context, r *http.Re
 	if token == "" {
 		return "", false, nil
 	}
-	fmt.Println(token)
 	return token, true, nil
 }
