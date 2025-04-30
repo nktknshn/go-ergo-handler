@@ -87,7 +87,7 @@ func (e internalServerError) Error() string {
 
 func (e internalServerError) WriteResponse(w http.ResponseWriter) {
 	w.WriteHeader(defaultHttpStatusCodeErrInternal)
-	w.Write([]byte(e.msg))
+	_, _ = w.Write([]byte(`{"error":"` + e.msg + `"}`))
 }
 
 func (e internalServerError) Unwrap() error {

@@ -9,6 +9,9 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// TODO: make it configurable
+var DefaultVarsGetter VarsGetter = &MuxVarsGetter{}
+
 const (
 	defaultHttpStatusCodeErrRouterParamParsing    = http.StatusBadRequest
 	defaultHttpStatusCodeErrRouterParamMissing    = http.StatusBadRequest
@@ -23,6 +26,16 @@ func newRouterParamMissingError(paramName string) error {
 	return fmt.Errorf("%w: %s", ErrRouterParamMissing, paramName)
 }
 
+type VarsGetter interface {
+	GetVars(r *http.Request) map[string]string
+}
+
+type MuxVarsGetter struct{}
+
+func (m *MuxVarsGetter) GetVars(r *http.Request) map[string]string {
+	return mux.Vars(r)
+}
+
 type routerParamKeyType string
 
 type RouteParamParserFunc[T any] func(ctx context.Context, v string) (T, error)
@@ -31,6 +44,7 @@ type RouterParamType[T any] struct {
 	Name       string
 	Parser     RouteParamParserFunc[T]
 	ErrMissing error
+	VarsGetter VarsGetter
 }
 
 // RouterParam is a parser that parses a required router param from the request.
@@ -60,7 +74,12 @@ type AttachedRouterParam[T any] struct {
 }
 
 func (p *AttachedRouterParam[T]) ParseRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (context.Context, error) {
-	vars := mux.Vars(r)
+
+	if p.rp.VarsGetter == nil {
+		p.rp.VarsGetter = DefaultVarsGetter
+	}
+
+	vars := p.rp.VarsGetter.GetVars(r)
 	v, ok := vars[p.rp.Name]
 	if !ok {
 		err := p.rp.ErrMissing
