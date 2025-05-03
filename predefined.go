@@ -30,6 +30,14 @@ func parseInt64(ctx context.Context, v string) (int64, error) {
 	return i, nil
 }
 
+func parseUInt64(ctx context.Context, v string) (uint64, error) {
+	i, err := strconv.ParseUint(v, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid uint64 value: %s", v)
+	}
+	return i, nil
+}
+
 var QueryParamBool = func(name string) *QueryParamType[bool] {
 	return QueryParam(name, parseBool)
 }
@@ -50,6 +58,30 @@ var QueryParamInt64 = func(name string) *QueryParamType[int64] {
 	return QueryParam(name, parseInt64)
 }
 
+var QueryParamInt64Maybe = func(name string) *QueryParamMaybeType[int64] {
+	return QueryParamMaybe(name, parseInt64)
+}
+
+var QueryParamUInt64 = func(name string) *QueryParamType[uint64] {
+	return QueryParam(name, parseUInt64)
+}
+
+var QueryParamUInt64Maybe = func(name string) *QueryParamMaybeType[uint64] {
+	return QueryParamMaybe(name, parseUInt64)
+}
+
 var RouterParamInt64 = func(name string) *RouterParamType[int64] {
 	return RouterParam(name, parseInt64)
+}
+
+var QueryParamString = func(name string) *QueryParamType[string] {
+	return QueryParam(name, func(ctx context.Context, v string) (string, error) {
+		return v, nil
+	})
+}
+
+var QueryParamStringMaybe = func(name string) *QueryParamMaybeType[string] {
+	return QueryParamMaybe(name, func(ctx context.Context, v string) (string, error) {
+		return v, nil
+	})
 }
