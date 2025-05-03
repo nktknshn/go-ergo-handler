@@ -122,6 +122,30 @@ type successResponse struct {
 	Result any `json:"result"`
 }
 
+type ResultHandler interface {
+	HandleError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error)
+	HandleResult(ctx context.Context, w http.ResponseWriter, r *http.Request, result any)
+}
+
+// TODO:
+// type defaultResultHandler struct{}
+
+// func (h *defaultResultHandler) marshalError(err error) any {
+// 	return errorResponse{Error: err.Error()}
+// }
+
+// func (h *defaultResultHandler) marshalResult(result any) any {
+// 	return successResponse{Result: result}
+// }
+
+// func (h *defaultResultHandler) HandleError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) {
+// 	DefaultHandlerErrorFunc(ctx, w, r, err)
+// }
+
+// func (h *defaultResultHandler) HandleResult(ctx context.Context, w http.ResponseWriter, r *http.Request, result any) {
+// 	DefaultHandlerResultFunc(ctx, w, r, result)
+// }
+
 // By default, the error will be marshalled to json {"error": "error message"}.
 // Default http status code is 500. Return ErrorWithHttpStatus to customize the http status code.
 // Implement ErrorWithResponseWriter or ErrorWithHeaderWriter for your errors to customize the response body or just headers.

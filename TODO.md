@@ -8,3 +8,4 @@
 - benchmarks
 - tests coverage
 - router agnostic router param parser
+- customizable result/error marshalling strategy

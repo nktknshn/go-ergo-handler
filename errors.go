@@ -76,22 +76,23 @@ func WrapWithStatusCode(err error, code int) error {
 	return NewError(code, err)
 }
 
-type internalServerError struct {
+// InternalServerError hides the original error from the client.
+type InternalServerError struct {
 	msg string
-	err error
+	Err error
 }
 
-func (e internalServerError) Error() string {
-	return e.err.Error()
+func (e InternalServerError) Error() string {
+	return e.Err.Error()
 }
 
-func (e internalServerError) WriteResponse(w http.ResponseWriter) {
+func (e InternalServerError) WriteResponse(w http.ResponseWriter) {
 	w.WriteHeader(defaultHttpStatusCodeErrInternal)
 	_, _ = w.Write([]byte(`{"error":"` + e.msg + `"}`))
 }
 
-func (e internalServerError) Unwrap() error {
-	return e.err
+func (e InternalServerError) Unwrap() error {
+	return e.Err
 }
 
 // IsWrappedError checks if the error is already wrapped with ErrorWithHeaderWriter or ErrorWithResponseWriter.
@@ -105,19 +106,19 @@ func IsWrappedError(err error) bool {
 	return false
 }
 
-// InternalServerError creates an error that does not expose the original error to the client
+// NewInternalServerError creates an error that does not expose the original error to the client
 // while wrapping the original error.
-func InternalServerError(err error) error {
+func NewInternalServerError(err error) error {
 	if err == nil {
 		return nil
 	}
 	if IsWrappedError(err) {
 		return err
 	}
-	return internalServerError{err: err, msg: "internal server error"}
+	return InternalServerError{Err: err, msg: "internal server error"}
 }
 
-// InternalServerErrorExpose creates an error that exposes the original error to the client.
-func InternalServerErrorExpose(err error) error {
+// NewInternalServerErrorExpose creates an error that exposes the original error to the client.
+func NewInternalServerErrorExpose(err error) error {
 	return WrapWithStatusCode(err, defaultHttpStatusCodeErrInternal)
 }
