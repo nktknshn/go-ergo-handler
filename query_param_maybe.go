@@ -47,7 +47,7 @@ func (p *AttachedQueryParamMaybe[T]) ParseRequest(ctx context.Context, w http.Re
 	if err != nil {
 		return ctx, WrapWithStatusCode(err, defaultHttpStatusCodeErrQueryParamValidation)
 	}
-	return context.WithValue(ctx, queryParamKeyType(p.qp.Name), &v), nil
+	return context.WithValue(ctx, queryParamKeyType(p.qp.Name), v), nil
 }
 
 func (p *AttachedQueryParamMaybe[T]) GetMaybe(r *http.Request) (*T, bool) {
@@ -67,5 +67,5 @@ func (p *AttachedQueryParamMaybe[T]) GetContextDefault(ctx context.Context, defa
 }
 
 func (p *AttachedQueryParamMaybe[T]) GetContextMaybe(ctx context.Context) (*T, bool) {
-	return GetFromContextMaybe[*T](ctx, queryParamKeyType(p.qp.Name))
+	return GetFromContextMaybe[T](ctx, queryParamKeyType(p.qp.Name))
 }

@@ -56,14 +56,14 @@ type AttachedAuthParser[T any, K any] struct {
 func (a *AttachedAuthParser[T, K]) ParseRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (context.Context, error) {
 	token, ok, err := a.tokenParserFunc(ctx, r)
 	if err != nil {
-		return ctx, InternalServerError(err)
+		return ctx, NewInternalServerError(err)
 	}
 	if !ok {
 		return ctx, WrapWithStatusCode(ErrAuthMissingToken, defaultHttpStatusCodeErrUnauthorized)
 	}
 	data, ok, err := a.tokenValidator.ValidateToken(ctx, token)
 	if err != nil {
-		return ctx, InternalServerError(err)
+		return ctx, NewInternalServerError(err)
 	}
 	if !ok {
 		return ctx, WrapWithStatusCode(ErrAuthTokenNotFound, defaultHttpStatusCodeErrUnauthorized)

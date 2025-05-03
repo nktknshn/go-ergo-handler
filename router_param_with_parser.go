@@ -16,7 +16,7 @@ type RouterParamWithParserType[T WithParser[T]] struct {
 func RouterParamWithParser[T WithParser[T]](name string) *RouterParamWithParserType[T] {
 	return &RouterParamWithParserType[T]{
 		Name:       name,
-		VarsGetter: DefaultVarsGetter,
+		VarsGetter: defaultVarsGetter,
 	}
 }
 
@@ -37,10 +37,9 @@ type AttachedRouterParamWithParser[T WithParser[T]] struct {
 
 func (p *AttachedRouterParamWithParser[T]) ParseRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (context.Context, error) {
 	if p.rp.VarsGetter == nil {
-		p.rp.VarsGetter = DefaultVarsGetter
+		p.rp.VarsGetter = defaultVarsGetter
 	}
-	vars := p.rp.VarsGetter.GetVars(r)
-	v, ok := vars[p.rp.Name]
+	v, ok := p.rp.VarsGetter.GetVar(r, p.rp.Name)
 	if !ok {
 		err := p.rp.ErrMissing
 		if err == nil {

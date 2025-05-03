@@ -49,7 +49,7 @@ func (a *AttachedQueryParamWithParserMaybe[T]) GetDefault(r *http.Request, defau
 }
 
 func (p *AttachedQueryParamWithParserMaybe[T]) GetContextMaybe(ctx context.Context) (*T, bool) {
-	return GetFromContextMaybe[*T](ctx, queryParamKeyType(p.qp.Name))
+	return GetFromContextMaybe[T](ctx, queryParamKeyType(p.qp.Name))
 }
 
 func (a *AttachedQueryParamWithParserMaybe[T]) GetContextDefault(ctx context.Context, defaultVal T) T {

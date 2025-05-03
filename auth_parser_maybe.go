@@ -31,14 +31,14 @@ type AttachedAuthParserMaybe[T any, K any] struct {
 func (a *AttachedAuthParserMaybe[T, K]) ParseRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (context.Context, error) {
 	token, ok, err := a.tokenParserFunc(ctx, r)
 	if err != nil {
-		return ctx, InternalServerError(err)
+		return ctx, NewInternalServerError(err)
 	}
 	if !ok {
 		return ctx, nil
 	}
 	data, ok, err := a.auth.ValidateToken(ctx, token)
 	if err != nil {
-		return ctx, InternalServerError(err)
+		return ctx, NewInternalServerError(err)
 	}
 	if !ok {
 		return ctx, nil
@@ -47,7 +47,7 @@ func (a *AttachedAuthParserMaybe[T, K]) ParseRequest(ctx context.Context, w http
 }
 
 func (a *AttachedAuthParserMaybe[T, K]) GetContextMaybe(ctx context.Context) (*T, bool) {
-	return GetFromContextMaybe[*T](ctx, a.key)
+	return GetFromContextMaybe[T](ctx, a.key)
 }
 
 func (a *AttachedAuthParserMaybe[T, K]) GetMaybe(r *http.Request) (*T, bool) {

@@ -6,11 +6,15 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/nktknshn/go-ergo-handler/adapters/gorilla"
 )
 
+func SetVarsGetter(varsGetter VarsGetter) {
+	defaultVarsGetter = varsGetter
+}
+
 // TODO: make it configurable
-var DefaultVarsGetter VarsGetter = &MuxVarsGetter{}
+var defaultVarsGetter VarsGetter = &gorilla.MuxVarsGetter{}
 
 const (
 	defaultHttpStatusCodeErrRouterParamParsing    = http.StatusBadRequest
@@ -27,13 +31,7 @@ func newRouterParamMissingError(paramName string) error {
 }
 
 type VarsGetter interface {
-	GetVars(r *http.Request) map[string]string
-}
-
-type MuxVarsGetter struct{}
-
-func (m *MuxVarsGetter) GetVars(r *http.Request) map[string]string {
-	return mux.Vars(r)
+	GetVar(r *http.Request, key string) (string, bool)
 }
 
 type routerParamKeyType string
@@ -76,11 +74,10 @@ type AttachedRouterParam[T any] struct {
 func (p *AttachedRouterParam[T]) ParseRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (context.Context, error) {
 
 	if p.rp.VarsGetter == nil {
-		p.rp.VarsGetter = DefaultVarsGetter
+		p.rp.VarsGetter = defaultVarsGetter
 	}
 
-	vars := p.rp.VarsGetter.GetVars(r)
-	v, ok := vars[p.rp.Name]
+	v, ok := p.rp.VarsGetter.GetVar(r, p.rp.Name)
 	if !ok {
 		err := p.rp.ErrMissing
 		if err == nil {

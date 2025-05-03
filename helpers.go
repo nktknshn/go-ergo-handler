@@ -24,22 +24,22 @@ func GetFromContext[T any, K any](ctx context.Context, key K) T {
 	if !ok {
 		panic(newBuilderMissingKeyError(fmt.Sprintf("missing key from context: %v", key)))
 	}
-	return v
+	return *v
 }
 
 // GetFromContextMaybe returns the value T stored by the key K in the context.
 // If the value is not present, it returns false.
 // If the value is not of type T, it panics with builderCastError.
-func GetFromContextMaybe[T any, K any](ctx context.Context, key K) (T, bool) {
+func GetFromContextMaybe[T any, K any](ctx context.Context, key K) (*T, bool) {
 	v := ctx.Value(key)
 	if v == nil {
-		return *new(T), false
+		return nil, false
 	}
 	casted, ok := v.(T)
 	if !ok {
-		panic(newBuilderCastError(fmt.Sprintf("error casting value to type %T: key: %v, value: %v", *new(T), key, v)))
+		panic(newBuilderCastError(fmt.Sprintf("error casting value to type %T: key: %v, value: %v, actual type: %T", *new(T), key, v, v)))
 	}
-	return casted, true
+	return &casted, true
 }
 
 // ValidateWithValidation validates the value v if it implements the WithValidation interface.

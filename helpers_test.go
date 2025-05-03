@@ -36,7 +36,8 @@ func TestGetFromContextMaybe(t *testing.T) {
 
 	require.Equal(t, 10, goergohandler.GetFromContext[int](ctxWithValue, key))
 	v, ok := goergohandler.GetFromContextMaybe[int](ctxWithoutValue, key)
-	require.Equal(t, 0, v)
+
+	require.Nil(t, v)
 	require.False(t, ok)
 
 	require.Panics(t, func() {
